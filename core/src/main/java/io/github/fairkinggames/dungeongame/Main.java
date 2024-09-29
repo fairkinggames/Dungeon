@@ -1,3 +1,5 @@
+//Main class is currently not used. The Following are default from libgdx liftoff
+
 package io.github.fairkinggames.dungeongame;
 
 import com.badlogic.gdx.ApplicationAdapter;
