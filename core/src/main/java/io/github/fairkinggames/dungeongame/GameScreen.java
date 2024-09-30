@@ -7,6 +7,7 @@ import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.MathUtils;
@@ -19,6 +20,8 @@ import com.badlogic.gdx.utils.TimeUtils;
 public class GameScreen implements Screen {
     final Dungeon game;
 
+
+    // All these below to be removed
     Texture dropImage;
     Texture bucketImage;
     Sound dropSound;
@@ -29,12 +32,29 @@ public class GameScreen implements Screen {
     long lastDropTime;
     int dropsGathered;
 
+    // Game Assets
+    Texture backgroundImage;
+    Texture rockImage;
+    Texture treeImage;
+    Texture warriorImage;
+    Rectangle rock;
+    Rectangle tree;
+    Rectangle player;
+
+    // list of rocks and trees to be created. List<GameObject> obstacles;
+
     public GameScreen(final Dungeon game) {
         this.game = game;
 
-        // load the images for the droplet and the bucket, 64x64 pixels each
+        // To be removed
         dropImage = new Texture(Gdx.files.internal("drop.png"));
         bucketImage = new Texture(Gdx.files.internal("bucket.png"));
+
+        // load the images for the background, rock, tree, and player class
+        //backgroundImage = new Texture(Gdx.files.internal("ph_bgyellow.png"));
+        rockImage = new Texture(Gdx.files.internal("ph_rock.png"));
+        treeImage = new Texture(Gdx.files.internal("ph_tree.png"));
+        warriorImage = new Texture(Gdx.files.internal("ph_war.png"));
 
         // load the drop sound effect and the rain background "music"
         dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.mp3"));
@@ -43,7 +63,7 @@ public class GameScreen implements Screen {
 
         // create the camera and the SpriteBatch
         camera = new OrthographicCamera();
-        camera.setToOrtho(false, 800, 480);
+        camera.setToOrtho(false, 1280, 720);
 
         // create a Rectangle to logically represent the bucket
         bucket = new Rectangle();
@@ -53,9 +73,33 @@ public class GameScreen implements Screen {
         bucket.width = 64;
         bucket.height = 64;
 
+        // create a Rectangle to logically represent the player
+        player = new Rectangle();
+        player.x = 1280 / 2 - 64 / 2; // center the player horizontally
+        player.y = 20; // bottom left corner of the player is 20 pixels above
+        // the bottom screen edge
+        player.width = 64;
+        player.height = 64;
+
+        // create a Rectangle to logically represent the tree
+        tree = new Rectangle();
+        tree.x = 32; // top left tree
+        tree.y = 32;
+        // the bottom screen edge
+        tree.width = 64;
+        tree.height = 64;
+
+        // create a Rectangle to logically represent the rock
+        rock = new Rectangle();
+        rock.x = 1280 / 2 - 64 / 2; // center the rock
+        rock.y = 720 /2 - 64 / 2;
+        // the bottom screen edge
+        rock.width = 64;
+        rock.height = 64;
+
         // create the raindrops array and spawn the first raindrop
-        raindrops = new Array<Rectangle>();
-        spawnRaindrop();
+        //raindrops = new Array<Rectangle>();
+        //spawnRaindrop();
 
     }
 
@@ -75,7 +119,7 @@ public class GameScreen implements Screen {
         // arguments to clear are the red, green
         // blue and alpha component in the range [0,1]
         // of the color to be used to clear the screen.
-        ScreenUtils.clear(0, 0, 0.2f, 1);
+        ScreenUtils.clear(Color.BLACK);
 
         // tell the camera to update its matrices.
         camera.update();
@@ -88,49 +132,39 @@ public class GameScreen implements Screen {
         // all drops
         game.batch.begin();
         game.font.draw(game.batch, "Drops Collected: " + dropsGathered, 0, 480);
-        game.batch.draw(bucketImage, bucket.x, bucket.y, bucket.width, bucket.height);
-        for (Rectangle raindrop : raindrops) {
+        game.batch.draw(warriorImage, player.x, player.y, player.width, player.height);
+        game.batch.draw(treeImage, tree.x, tree.y, tree.width, tree.height);
+        game.batch.draw(rockImage, rock.x, rock.y, rock.width, rock.height);
+
+        /* for (Rectangle raindrop : raindrops) {
             game.batch.draw(dropImage, raindrop.x, raindrop.y);
-        }
+        }*/
         game.batch.end();
 
-        // process user input
+        // to be removed as the game is not going to be drag to move
         if (Gdx.input.isTouched()) {
             Vector3 touchPos = new Vector3();
             touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
             camera.unproject(touchPos);
-            bucket.x = touchPos.x - 64 / 2;
+            player.x = touchPos.x - 64 / 2;
+            player.y = touchPos.y - 64 / 2;
         }
         if (Gdx.input.isKeyPressed(Keys.LEFT))
-            bucket.x -= 200 * Gdx.graphics.getDeltaTime();
+            player.x -= 200 * Gdx.graphics.getDeltaTime();
         if (Gdx.input.isKeyPressed(Keys.RIGHT))
-            bucket.x += 200 * Gdx.graphics.getDeltaTime();
+            player.x += 200 * Gdx.graphics.getDeltaTime();
+        if (Gdx.input.isKeyPressed(Keys.UP))
+            player.y += 200 * Gdx.graphics.getDeltaTime();
+        if (Gdx.input.isKeyPressed(Keys.DOWN))
+            player.y -= 200 * Gdx.graphics.getDeltaTime();
+
 
         // make sure the bucket stays within the screen bounds
-        if (bucket.x < 0)
-            bucket.x = 0;
-        if (bucket.x > 800 - 64)
-            bucket.x = 800 - 64;
+        if (player.x < 0)
+            player.x = 0;
+        if (player.x > 1280 - 64)
+            player.x = 1280 - 64;
 
-        // check if we need to create a new raindrop
-        if (TimeUtils.nanoTime() - lastDropTime > 1000000000)
-            spawnRaindrop();
-
-        // move the raindrops, remove any that are beneath the bottom edge of
-        // the screen or that hit the bucket. In the later case we increase the
-        // value our drops counter and add a sound effect.
-        Iterator<Rectangle> iter = raindrops.iterator();
-        while (iter.hasNext()) {
-            Rectangle raindrop = iter.next();
-            raindrop.y -= 200 * Gdx.graphics.getDeltaTime();
-            if (raindrop.y + 64 < 0)
-                iter.remove();
-            if (raindrop.overlaps(bucket)) {
-                dropsGathered++;
-                dropSound.play();
-                iter.remove();
-            }
-        }
     }
 
     @Override
@@ -160,6 +194,7 @@ public class GameScreen implements Screen {
     public void dispose() {
         dropImage.dispose();
         bucketImage.dispose();
+        warriorImage.dispose();
         dropSound.dispose();
         rainMusic.dispose();
     }
