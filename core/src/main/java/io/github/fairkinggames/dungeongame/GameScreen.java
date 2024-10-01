@@ -43,8 +43,12 @@ public class GameScreen implements Screen {
 
     // list of rocks and trees to be created. List<GameObject> obstacles;
 
+    Array<Rectangle> obstacles;
+
+
     public GameScreen(final Dungeon game) {
         this.game = game;
+        obstacles = new Array<Rectangle>();
 
         // To be removed
         dropImage = new Texture(Gdx.files.internal("drop.png"));
@@ -88,6 +92,7 @@ public class GameScreen implements Screen {
         // the bottom screen edge
         tree.width = 64;
         tree.height = 64;
+        obstacles.add(tree);
 
         // create a Rectangle to logically represent the rock
         rock = new Rectangle();
@@ -96,6 +101,9 @@ public class GameScreen implements Screen {
         // the bottom screen edge
         rock.width = 64;
         rock.height = 64;
+
+
+        obstacles.add(rock);
 
         // create the raindrops array and spawn the first raindrop
         //raindrops = new Array<Rectangle>();
@@ -133,8 +141,16 @@ public class GameScreen implements Screen {
         game.batch.begin();
         game.font.draw(game.batch, "Drops Collected: " + dropsGathered, 0, 480);
         game.batch.draw(warriorImage, player.x, player.y, player.width, player.height);
-        game.batch.draw(treeImage, tree.x, tree.y, tree.width, tree.height);
-        game.batch.draw(rockImage, rock.x, rock.y, rock.width, rock.height);
+
+        for (Rectangle obstacle : obstacles) {
+            if (obstacle == rock){
+                game.batch.draw(rockImage, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            }
+            else if (obstacle == tree){
+                game.batch.draw(treeImage, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            }
+
+        }
 
         /* for (Rectangle raindrop : raindrops) {
             game.batch.draw(dropImage, raindrop.x, raindrop.y);
@@ -157,6 +173,8 @@ public class GameScreen implements Screen {
             player.y += 200 * Gdx.graphics.getDeltaTime();
         if (Gdx.input.isKeyPressed(Keys.DOWN))
             player.y -= 200 * Gdx.graphics.getDeltaTime();
+
+        checkCollision();
 
 
         // make sure the bucket stays within the screen bounds
@@ -197,6 +215,29 @@ public class GameScreen implements Screen {
         warriorImage.dispose();
         dropSound.dispose();
         rainMusic.dispose();
+    }
+
+    private void checkCollision(){
+        for (Rectangle obstacle : obstacles) {
+            if (player.overlaps(obstacle)) {
+                movePlayerBack();
+            }
+        }
+    }
+
+    private void movePlayerBack() {
+        if (Gdx.input.isKeyPressed(Keys.LEFT)) {
+            player.x += 200 * Gdx.graphics.getDeltaTime();
+        }
+        if (Gdx.input.isKeyPressed(Keys.RIGHT)) {
+            player.x -= 200 * Gdx.graphics.getDeltaTime();
+        }
+        if (Gdx.input.isKeyPressed(Keys.UP)) {
+            player.y -= 200 * Gdx.graphics.getDeltaTime();
+        }
+        if (Gdx.input.isKeyPressed(Keys.DOWN)) {
+            player.y += 200 * Gdx.graphics.getDeltaTime();
+        }
     }
 
 }
