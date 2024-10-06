@@ -10,6 +10,7 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
@@ -28,8 +29,6 @@ public class GameScreen implements Screen {
     Music rainMusic;
     OrthographicCamera camera;
     Rectangle bucket;
-    Array<Rectangle> raindrops;
-    long lastDropTime;
     int dropsGathered;
 
     // Game Assets
@@ -37,18 +36,33 @@ public class GameScreen implements Screen {
     Texture rockImage;
     Texture treeImage;
     Texture warriorImage;
+    Texture enemyImage;
     Rectangle rock;
     Rectangle tree;
     Rectangle player;
+    Rectangle enemy;
 
     // list of rocks and trees to be created. List<GameObject> obstacles;
 
     Array<Rectangle> obstacles;
+    Array<Rectangle> enemies;
+
+    int playerMaxHp = 100;
+    int playerCurrentHp = 100;
+    float hpBarWidth = 64;
+    float hpBarHeight = 10;
+
+    // To draw HP bar
+    ShapeRenderer shapeRenderer;
 
 
     public GameScreen(final Dungeon game) {
         this.game = game;
+
+        shapeRenderer = new ShapeRenderer();
+
         obstacles = new Array<Rectangle>();
+        enemies = new Array<Rectangle>();
 
         // To be removed
         dropImage = new Texture(Gdx.files.internal("drop.png"));
@@ -59,6 +73,7 @@ public class GameScreen implements Screen {
         rockImage = new Texture(Gdx.files.internal("ph_rock.png"));
         treeImage = new Texture(Gdx.files.internal("ph_tree.png"));
         warriorImage = new Texture(Gdx.files.internal("ph_war.png"));
+        enemyImage = new Texture(Gdx.files.internal("ph_enemy.png"));
 
         // load the drop sound effect and the rain background "music"
         dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.mp3"));
@@ -101,32 +116,20 @@ public class GameScreen implements Screen {
         // the bottom screen edge
         rock.width = 64;
         rock.height = 64;
-
-
         obstacles.add(rock);
 
-        // create the raindrops array and spawn the first raindrop
-        //raindrops = new Array<Rectangle>();
-        //spawnRaindrop();
+        enemy = new Rectangle();
+        enemy.x = 100;
+        enemy.y = 100;
+        enemy.width = 64;
+        enemy.height = 64;
+        enemies.add(enemy);
 
-    }
-
-    private void spawnRaindrop() {
-        Rectangle raindrop = new Rectangle();
-        raindrop.x = MathUtils.random(0, 800 - 64);
-        raindrop.y = 480;
-        raindrop.width = 64;
-        raindrop.height = 64;
-        raindrops.add(raindrop);
-        lastDropTime = TimeUtils.nanoTime();
     }
 
     @Override
     public void render(float delta) {
-        // clear the screen with a dark blue color. The
-        // arguments to clear are the red, green
-        // blue and alpha component in the range [0,1]
-        // of the color to be used to clear the screen.
+        // clear the screen with a dark blue color.
         ScreenUtils.clear(Color.BLACK);
 
         // tell the camera to update its matrices.
@@ -139,7 +142,7 @@ public class GameScreen implements Screen {
         // begin a new batch and draw the bucket and
         // all drops
         game.batch.begin();
-        game.font.draw(game.batch, "Drops Collected: " + dropsGathered, 0, 480);
+        game.font.draw(game.batch, "Your HP: " + playerCurrentHp, 0, 480);
         game.batch.draw(warriorImage, player.x, player.y, player.width, player.height);
 
         for (Rectangle obstacle : obstacles) {
@@ -149,13 +152,18 @@ public class GameScreen implements Screen {
             else if (obstacle == tree){
                 game.batch.draw(treeImage, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
             }
-
         }
 
-        /* for (Rectangle raindrop : raindrops) {
-            game.batch.draw(dropImage, raindrop.x, raindrop.y);
-        }*/
+        //Rename this E later, enemy is not a good name, should likely be types of enemies.
+        for (Rectangle E : enemies) {
+            if (E == enemy){
+                game.batch.draw(enemyImage, enemy.x, enemy.y, enemy.width, enemy.height);
+            }
+        }
+
         game.batch.end();
+
+        drawHPBar();
 
         // to be removed as the game is not going to be drag to move
         if (Gdx.input.isTouched()) {
@@ -175,6 +183,7 @@ public class GameScreen implements Screen {
             player.y -= 200 * Gdx.graphics.getDeltaTime();
 
         checkCollision();
+        checkDamage();
 
 
         // make sure the bucket stays within the screen bounds
@@ -225,6 +234,15 @@ public class GameScreen implements Screen {
         }
     }
 
+    private void checkDamage(){
+        for (Rectangle E : enemies) {
+            if (player.overlaps(E)) {
+                movePlayerBack();
+                takeDamage(1);
+            }
+        }
+    }
+
     private void movePlayerBack() {
         if (Gdx.input.isKeyPressed(Keys.LEFT)) {
             player.x += 200 * Gdx.graphics.getDeltaTime();
@@ -237,6 +255,31 @@ public class GameScreen implements Screen {
         }
         if (Gdx.input.isKeyPressed(Keys.DOWN)) {
             player.y += 200 * Gdx.graphics.getDeltaTime();
+        }
+    }
+
+    private void drawHPBar() {
+        // Calculate the width of the HP bar based on the player's current HP
+        float currentHPWidth = (playerCurrentHp / (float)playerMaxHp) * hpBarWidth;
+
+        // Set the color and draw the HP bar above the player
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+        // Draw the background of the HP bar (gray)
+        shapeRenderer.setColor(Color.RED);
+        shapeRenderer.rect(player.x, player.y + player.height + 10, hpBarWidth, hpBarHeight);
+
+        // Draw the actual HP bar (red)
+        shapeRenderer.setColor(Color.GREEN);
+        shapeRenderer.rect(player.x, player.y + player.height + 10, currentHPWidth, hpBarHeight);
+
+        shapeRenderer.end();
+    }
+
+    public void takeDamage(int damage) {
+        playerCurrentHp -= damage;
+        if (playerCurrentHp < 0) {
+            playerCurrentHp = 0; // Player's health shouldn't go below 0
         }
     }
 
