@@ -49,6 +49,8 @@ public class GameScreen implements Screen {
 
     int playerMaxHp = 100;
     int playerCurrentHp = 100;
+    long lastDamageTime = 0;
+    long damageInterval = 2000;
     float hpBarWidth = 64;
     float hpBarHeight = 10;
 
@@ -238,7 +240,10 @@ public class GameScreen implements Screen {
         for (Rectangle E : enemies) {
             if (player.overlaps(E)) {
                 movePlayerBack();
-                takeDamage(1);
+                if (TimeUtils.timeSinceMillis(lastDamageTime) >= damageInterval) {
+                    takeDamage(10); // Player takes 10 damage every 2 seconds
+                    lastDamageTime = TimeUtils.millis(); // Update the time when the last damage was taken
+                }
             }
         }
     }
