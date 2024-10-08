@@ -81,6 +81,7 @@ public class GameScreen implements Screen {
         treeImage = new Texture(Gdx.files.internal("ph_tree.png"));
         warriorImage = new Texture(Gdx.files.internal("ph_war.png"));
         enemyImage = new Texture(Gdx.files.internal("ph_enemy.png"));
+        backgroundImage = new Texture(Gdx.files.internal("ph_bgyellow.png"));
 
         // load the drop sound effect and the rain background "music"
         dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.mp3"));
@@ -132,6 +133,8 @@ public class GameScreen implements Screen {
         enemy.height = 64;
         enemies.add(enemy);
 
+        surroundWithTrees();
+
     }
 
     @Override
@@ -149,6 +152,7 @@ public class GameScreen implements Screen {
         // begin a new batch and draw the bucket and
         // all drops
         game.batch.begin();
+        game.batch.draw(backgroundImage, 0, 0, 1280, 720);
         game.font.draw(game.batch, "Your HP: " + playerCurrentHp, 0, 480);
         game.font.draw(game.batch, "Enemy HP: " + enemyCurrentHp, 0, 380);
         game.batch.draw(warriorImage, player.x, player.y, player.width, player.height);
@@ -157,7 +161,7 @@ public class GameScreen implements Screen {
             if (obstacle == rock){
                 game.batch.draw(rockImage, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
             }
-            else if (obstacle == tree){
+            else {
                 game.batch.draw(treeImage, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
             }
         }
@@ -235,6 +239,7 @@ public class GameScreen implements Screen {
         warriorImage.dispose();
         dropSound.dispose();
         rainMusic.dispose();
+        backgroundImage.dispose();
     }
 
     private void checkCollision(){
@@ -332,6 +337,25 @@ public class GameScreen implements Screen {
         if (enemyCurrentHp < 0) {
             enemyCurrentHp = 0; // Player's health shouldn't go below 0
         }
+    }
+
+    private void surroundWithTrees() {
+        int treeWidth = 64;
+        int treeHeight = 64;
+
+        // Screen dimensions
+        int screenWidth = 1280;
+        int screenHeight = 720;
+        for (int x = 0; x < screenWidth; x += treeWidth) {
+            // Top edge
+            Rectangle treeTop = new Rectangle(x, screenHeight - treeHeight, treeWidth, treeHeight);
+            obstacles.add(treeTop);
+
+            // Bottom edge
+            Rectangle treeBottom = new Rectangle(x, 0, treeWidth, treeHeight);
+            obstacles.add(treeBottom);
+        }
+
     }
 
 }
