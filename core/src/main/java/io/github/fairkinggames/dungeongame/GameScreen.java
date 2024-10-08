@@ -35,7 +35,9 @@ public class GameScreen implements Screen {
     Texture backgroundImage;
     Texture rockImage;
     Texture treeImage;
-    Texture warriorImage;
+    Texture playerNormalStance;
+    Texture playerAttackStance;
+    Texture currentPlayerStance;
     Texture enemyImage;
     Rectangle rock;
     Rectangle tree;
@@ -79,8 +81,10 @@ public class GameScreen implements Screen {
         //backgroundImage = new Texture(Gdx.files.internal("ph_bgyellow.png"));
         rockImage = new Texture(Gdx.files.internal("ph_rock.png"));
         treeImage = new Texture(Gdx.files.internal("ph_tree.png"));
-        warriorImage = new Texture(Gdx.files.internal("ph_war.png"));
-        enemyImage = new Texture(Gdx.files.internal("ph_enemy.png"));
+        playerNormalStance = new Texture(Gdx.files.internal("AIpaladin.png"));
+        playerAttackStance = new Texture(Gdx.files.internal("AIpaladinAtk.png"));
+        currentPlayerStance = playerNormalStance;
+        enemyImage = new Texture(Gdx.files.internal("AImonster.png"));
         backgroundImage = new Texture(Gdx.files.internal("ph_bgyellow.png"));
 
         // load the drop sound effect and the rain background "music"
@@ -155,7 +159,7 @@ public class GameScreen implements Screen {
         game.batch.draw(backgroundImage, 0, 0, 1280, 720);
         game.font.draw(game.batch, "Your HP: " + playerCurrentHp, 0, 480);
         game.font.draw(game.batch, "Enemy HP: " + enemyCurrentHp, 0, 380);
-        game.batch.draw(warriorImage, player.x, player.y, player.width, player.height);
+        game.batch.draw(currentPlayerStance, player.x, player.y, player.width, player.height);
 
         for (Rectangle obstacle : obstacles) {
             if (obstacle == rock){
@@ -194,8 +198,12 @@ public class GameScreen implements Screen {
             player.y += 200 * Gdx.graphics.getDeltaTime();
         if (Gdx.input.isKeyPressed(Keys.DOWN))
             player.y -= 200 * Gdx.graphics.getDeltaTime();
-        if (Gdx.input.isKeyPressed(Keys.A))
+        if (Gdx.input.isKeyPressed(Keys.A)){
             doDamage();
+            currentPlayerStance = playerAttackStance;
+        } else {
+            currentPlayerStance = playerNormalStance;
+        }
 
         checkCollision();
         checkDamage();
@@ -236,7 +244,7 @@ public class GameScreen implements Screen {
     public void dispose() {
         dropImage.dispose();
         bucketImage.dispose();
-        warriorImage.dispose();
+        playerNormalStance.dispose();
         dropSound.dispose();
         rainMusic.dispose();
         backgroundImage.dispose();
