@@ -49,8 +49,13 @@ public class GameScreen implements Screen {
 
     int playerMaxHp = 100;
     int playerCurrentHp = 100;
-    long lastDamageTime = 0;
-    long damageInterval = 2000;
+    int enemyMaxHp = 100;
+    int enemyCurrentHp = 100;
+
+    long lastDamageTimeEnemy = 0;
+    long lastDamageTimePlayer = 0;
+    long damageIntervalEnemy = 2000;
+    long damageIntervalPlayer = 1000;
     float hpBarWidth = 64;
     float hpBarHeight = 10;
 
@@ -145,6 +150,7 @@ public class GameScreen implements Screen {
         // all drops
         game.batch.begin();
         game.font.draw(game.batch, "Your HP: " + playerCurrentHp, 0, 480);
+        game.font.draw(game.batch, "Enemy HP: " + enemyCurrentHp, 0, 380);
         game.batch.draw(warriorImage, player.x, player.y, player.width, player.height);
 
         for (Rectangle obstacle : obstacles) {
@@ -166,6 +172,7 @@ public class GameScreen implements Screen {
         game.batch.end();
 
         drawHPBar();
+        drawEnemyHPBar();
 
         // to be removed as the game is not going to be drag to move
         if (Gdx.input.isTouched()) {
@@ -183,6 +190,8 @@ public class GameScreen implements Screen {
             player.y += 200 * Gdx.graphics.getDeltaTime();
         if (Gdx.input.isKeyPressed(Keys.DOWN))
             player.y -= 200 * Gdx.graphics.getDeltaTime();
+        if (Gdx.input.isKeyPressed(Keys.A))
+            doDamage();
 
         checkCollision();
         checkDamage();
@@ -236,13 +245,24 @@ public class GameScreen implements Screen {
         }
     }
 
+    private void doDamage(){
+        if(player.overlaps(enemy)){
+            // this is being reused. Will make a function
+            if (TimeUtils.timeSinceMillis(lastDamageTimePlayer) >= damageIntervalPlayer) {
+                enemyTakeDamage(20); // Player takes 10 damage every 2 seconds
+                lastDamageTimePlayer = TimeUtils.millis(); // Update the time when the last damage was taken
+            }
+        }
+
+    }
+
     private void checkDamage(){
         for (Rectangle E : enemies) {
             if (player.overlaps(E)) {
                 movePlayerBack();
-                if (TimeUtils.timeSinceMillis(lastDamageTime) >= damageInterval) {
-                    takeDamage(10); // Player takes 10 damage every 2 seconds
-                    lastDamageTime = TimeUtils.millis(); // Update the time when the last damage was taken
+                if (TimeUtils.timeSinceMillis(lastDamageTimeEnemy) >= damageIntervalEnemy) {
+                    playerTakeDamage(10); // Player takes 10 damage every 2 seconds
+                    lastDamageTimeEnemy = TimeUtils.millis(); // Update the time when the last damage was taken
                 }
             }
         }
@@ -281,10 +301,36 @@ public class GameScreen implements Screen {
         shapeRenderer.end();
     }
 
-    public void takeDamage(int damage) {
+    private void drawEnemyHPBar() {
+        // Calculate the width of the HP bar based on the player's current HP
+        float currentHPWidth = (enemyCurrentHp / (float)enemyMaxHp) * hpBarWidth;
+
+        // Set the color and draw the HP bar above the player
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+        // Draw the background of the HP bar (gray)
+        shapeRenderer.setColor(Color.RED);
+        shapeRenderer.rect(enemy.x, enemy.y + enemy.height + 10, hpBarWidth, hpBarHeight);
+
+        // Draw the actual HP bar (red)
+        shapeRenderer.setColor(Color.GREEN);
+        shapeRenderer.rect(enemy.x, enemy.y + enemy.height + 10, currentHPWidth, hpBarHeight);
+
+        shapeRenderer.end();
+    }
+
+
+    public void playerTakeDamage(int damage) {
         playerCurrentHp -= damage;
         if (playerCurrentHp < 0) {
             playerCurrentHp = 0; // Player's health shouldn't go below 0
+        }
+    }
+
+    public void enemyTakeDamage(int damage) {
+        enemyCurrentHp -= damage;
+        if (enemyCurrentHp < 0) {
+            enemyCurrentHp = 0; // Player's health shouldn't go below 0
         }
     }
 
