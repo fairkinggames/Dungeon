@@ -39,6 +39,7 @@ public class GameScreen implements Screen {
     Texture playerAttackStance;
     Texture currentPlayerStance;
     Texture enemyImage;
+    Texture bombImage;
     Rectangle rock;
     Rectangle tree;
     Rectangle player;
@@ -48,6 +49,7 @@ public class GameScreen implements Screen {
 
     Array<Rectangle> obstacles;
     Array<Rectangle> enemies;
+    Array<Rectangle> bombs;
 
     int playerMaxHp = 100;
     int playerCurrentHp = 100;
@@ -58,6 +60,8 @@ public class GameScreen implements Screen {
     long lastDamageTimePlayer = 0;
     long damageIntervalEnemy = 2000;
     long damageIntervalPlayer = 1000;
+    float lastBombDropTime = 0.0f;  // Time of the last bomb drop
+    float cooldownTime = 2f;
     float hpBarWidth = 64;
     float hpBarHeight = 10;
 
@@ -72,10 +76,12 @@ public class GameScreen implements Screen {
 
         obstacles = new Array<Rectangle>();
         enemies = new Array<Rectangle>();
+        bombs = new Array<>();
 
         // To be removed
         dropImage = new Texture(Gdx.files.internal("drop.png"));
         bucketImage = new Texture(Gdx.files.internal("bucket.png"));
+        bombImage = new Texture(Gdx.files.internal("AIbomb.png"));
 
         // load the images for the background, rock, tree, and player class
         //backgroundImage = new Texture(Gdx.files.internal("ph_bgyellow.png"));
@@ -95,14 +101,6 @@ public class GameScreen implements Screen {
         // create the camera and the SpriteBatch
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 1280, 720);
-
-        // create a Rectangle to logically represent the bucket
-        bucket = new Rectangle();
-        bucket.x = 800 / 2 - 64 / 2; // center the bucket horizontally
-        bucket.y = 20; // bottom left corner of the bucket is 20 pixels above
-        // the bottom screen edge
-        bucket.width = 64;
-        bucket.height = 64;
 
         // create a Rectangle to logically represent the player
         player = new Rectangle();
@@ -137,6 +135,7 @@ public class GameScreen implements Screen {
         enemy.height = 64;
         enemies.add(enemy);
 
+
         surroundWithTrees();
 
     }
@@ -153,6 +152,8 @@ public class GameScreen implements Screen {
         // coordinate system specified by the camera.
         game.batch.setProjectionMatrix(camera.combined);
 
+        // Get the current time in seconds
+        float currentTime = TimeUtils.nanoTime() / 1e9f;
         // begin a new batch and draw the bucket and
         // all drops
         game.batch.begin();
@@ -175,6 +176,11 @@ public class GameScreen implements Screen {
             if (E == enemy){
                 game.batch.draw(enemyImage, enemy.x, enemy.y, enemy.width, enemy.height);
             }
+        }
+
+
+        for (Rectangle bomb : bombs) {
+            game.batch.draw(bombImage, bomb.x, bomb.y, bomb.width, bomb.height);
         }
 
         game.batch.end();
@@ -203,6 +209,12 @@ public class GameScreen implements Screen {
             currentPlayerStance = playerAttackStance;
         } else {
             currentPlayerStance = playerNormalStance;
+        }
+        if (Gdx.input.isKeyPressed(Keys.E) && currentTime - lastBombDropTime >= cooldownTime) {
+            Rectangle bombRect = new Rectangle(player.x + player.width / 2 - 32 / 2, player.y, 64,64);
+            // Add the bomb to the array
+            bombs.add(bombRect);
+            lastBombDropTime = currentTime;
         }
 
         checkCollision();
@@ -266,8 +278,9 @@ public class GameScreen implements Screen {
                 lastDamageTimePlayer = TimeUtils.millis(); // Update the time when the last damage was taken
             }
         }
-
     }
+
+
 
     private void checkDamage(){
         for (Rectangle E : enemies) {
