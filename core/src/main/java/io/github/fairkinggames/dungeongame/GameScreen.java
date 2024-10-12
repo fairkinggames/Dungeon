@@ -40,6 +40,7 @@ public class GameScreen implements Screen {
     Texture currentPlayerStance;
     Texture enemyImage;
     Texture bombImage;
+    Texture explosionImage;
     Rectangle rock;
     Rectangle tree;
     Rectangle player;
@@ -49,7 +50,7 @@ public class GameScreen implements Screen {
 
     Array<Rectangle> obstacles;
     Array<Rectangle> enemies;
-    Array<Rectangle> bombs;
+
 
     int playerMaxHp = 100;
     int playerCurrentHp = 100;
@@ -69,6 +70,9 @@ public class GameScreen implements Screen {
     ShapeRenderer shapeRenderer;
 
 
+    Array<Bomb> bombs;
+
+
     public GameScreen(final Dungeon game) {
         this.game = game;
 
@@ -82,6 +86,7 @@ public class GameScreen implements Screen {
         dropImage = new Texture(Gdx.files.internal("drop.png"));
         bucketImage = new Texture(Gdx.files.internal("bucket.png"));
         bombImage = new Texture(Gdx.files.internal("AIbomb.png"));
+        explosionImage = new Texture(Gdx.files.internal("AIexplosion.png"));
 
         // load the images for the background, rock, tree, and player class
         //backgroundImage = new Texture(Gdx.files.internal("ph_bgyellow.png"));
@@ -144,14 +149,11 @@ public class GameScreen implements Screen {
     public void render(float delta) {
         // clear the screen with a dark blue color.
         ScreenUtils.clear(Color.BLACK);
-
         // tell the camera to update its matrices.
         camera.update();
-
         // tell the SpriteBatch to render in the
         // coordinate system specified by the camera.
         game.batch.setProjectionMatrix(camera.combined);
-
         // Get the current time in seconds
         float currentTime = TimeUtils.nanoTime() / 1e9f;
         // begin a new batch and draw the bucket and
@@ -179,8 +181,30 @@ public class GameScreen implements Screen {
         }
 
 
-        for (Rectangle bomb : bombs) {
-            game.batch.draw(bombImage, bomb.x, bomb.y, bomb.width, bomb.height);
+
+        Iterator<Bomb> iter = bombs.iterator();
+        while (iter.hasNext()) {
+            Bomb bomb = iter.next();
+            // Check if the bomb is in the exploding state
+            if (bomb.isExploding) {
+                // Show explosion image for a short time
+                if (TimeUtils.nanoTime() - bomb.explosionStartTime < 500_000_000L) {  // Show for 0.5 seconds
+                    game.batch.draw(explosionImage, bomb.rect.x, bomb.rect.y, bomb.rect.width, bomb.rect.height);
+                } else {
+                    // Explosion time is over, remove the bomb
+                    iter.remove();
+                }
+            } else {
+                // Regular bomb state
+                game.batch.draw(bombImage, bomb.rect.x, bomb.rect.y, bomb.rect.width, bomb.rect.height);
+
+                // Check if 3 seconds (3e9 nanoseconds) have passed since the bomb was placed
+                if (TimeUtils.nanoTime() - bomb.spawnTime > 3e9) {
+                    // Bomb should start exploding
+                    bomb.isExploding = true;
+                    bomb.explosionStartTime = TimeUtils.nanoTime();  // Record explosion start time
+                }
+            }
         }
 
         game.batch.end();
@@ -211,9 +235,10 @@ public class GameScreen implements Screen {
             currentPlayerStance = playerNormalStance;
         }
         if (Gdx.input.isKeyPressed(Keys.E) && currentTime - lastBombDropTime >= cooldownTime) {
-            Rectangle bombRect = new Rectangle(player.x + player.width / 2 - 32 / 2, player.y, 64,64);
-            // Add the bomb to the array
-            bombs.add(bombRect);
+            // Create a new bomb
+            Rectangle bombRect = new Rectangle(player.x, player.y, 64, 64);
+            Bomb bomb = new Bomb(bombRect);
+            bombs.add(bomb);
             lastBombDropTime = currentTime;
         }
 
@@ -377,6 +402,17 @@ public class GameScreen implements Screen {
             obstacles.add(treeBottom);
         }
 
+    }
+    class Bomb {
+        Rectangle rect;
+        long spawnTime;
+        boolean isExploding = false;  // Whether the bomb is in the exploding state
+        long explosionStartTime;  // Time when the explosion started (for timing)
+
+        public Bomb(Rectangle rect) {
+            this.rect = rect;
+            this.spawnTime = TimeUtils.nanoTime(); // Capture when the bomb was placed
+        }
     }
 
 }
