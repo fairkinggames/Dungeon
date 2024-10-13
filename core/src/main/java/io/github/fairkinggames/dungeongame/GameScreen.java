@@ -21,7 +21,6 @@ import com.badlogic.gdx.utils.TimeUtils;
 public class GameScreen implements Screen {
     final Dungeon game;
 
-
     // All these below to be removed
     Texture dropImage;
     Texture bucketImage;
@@ -190,6 +189,23 @@ public class GameScreen implements Screen {
                 // Show explosion image for a short time
                 if (TimeUtils.nanoTime() - bomb.explosionStartTime < 500_000_000L) {  // Show for 0.5 seconds
                     game.batch.draw(explosionImage, bomb.rect.x, bomb.rect.y, bomb.rect.width, bomb.rect.height);
+                    float playerDistance = distance(player.x + player.width / 2, player.y + player.height / 2,
+                        bomb.rect.x + bomb.rect.width / 2, bomb.rect.y + bomb.rect.height / 2);
+                    if (playerDistance < bomb.explosionRadius) {
+                        System.out.println(playerDistance);
+                        System.out.println(bomb.explosionRadius);
+                        // Apply damage to the player
+                        playerTakeDamage(50);  // Apply 20 damage (adjust as needed)
+                    }
+                    for (Rectangle enemy : enemies) {
+                        float enemyDistance = distance(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2,
+                            bomb.rect.x + bomb.rect.width / 2, bomb.rect.y + bomb.rect.height / 2);
+
+                        if (enemyDistance < bomb.explosionRadius) {
+                            // Apply damage to the enemy
+                            enemyTakeDamage(20);  // Apply 20 damage (adjust as needed)
+                        }
+                    }
                 } else {
                     // Explosion time is over, remove the bomb
                     iter.remove();
@@ -403,15 +419,31 @@ public class GameScreen implements Screen {
         }
 
     }
+
+    private float distance(float x1, float y1, float x2, float y2) {
+        return (float) Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+    }
     class Bomb {
         Rectangle rect;
         long spawnTime;
         boolean isExploding = false;  // Whether the bomb is in the exploding state
         long explosionStartTime;  // Time when the explosion started (for timing)
+        float explosionRadius = 100f;
 
         public Bomb(Rectangle rect) {
             this.rect = rect;
             this.spawnTime = TimeUtils.nanoTime(); // Capture when the bomb was placed
+        }
+    }
+    public class Player {
+        int health = 100;  // Player's health
+
+        public void takeDamage(int damage) {
+            health -= damage;
+            if (health <= 0) {
+                // Handle player death (e.g., respawn or game over)
+                System.out.println("Player is dead!");
+            }
         }
     }
 
