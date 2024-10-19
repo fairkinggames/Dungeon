@@ -42,7 +42,7 @@ public class GameScreen implements Screen {
     Texture explosionImage;
     Rectangle rock;
     Rectangle tree;
-    Rectangle player;
+    Player player;
     Rectangle enemy;
 
     // list of rocks and trees to be created. List<GameObject> obstacles;
@@ -107,12 +107,7 @@ public class GameScreen implements Screen {
         camera.setToOrtho(false, 1280, 720);
 
         // create a Rectangle to logically represent the player
-        player = new Rectangle();
-        player.x = 1280 / 2 - 64 / 2; // center the player horizontally
-        player.y = 20; // bottom left corner of the player is 20 pixels above
-        // the bottom screen edge
-        player.width = 64;
-        player.height = 64;
+        player = new Player(840, 360, 64, 64);
 
         // create a Rectangle to logically represent the tree
         tree = new Rectangle();
@@ -161,7 +156,7 @@ public class GameScreen implements Screen {
         game.batch.draw(backgroundImage, 0, 0, 1280, 720);
         game.font.draw(game.batch, "Your HP: " + playerCurrentHp, 0, 480);
         game.font.draw(game.batch, "Enemy HP: " + enemyCurrentHp, 0, 380);
-        game.batch.draw(currentPlayerStance, player.x, player.y, player.width, player.height);
+        player.render(game.batch, currentPlayerStance);
 
         for (Rectangle obstacle : obstacles) {
             if (obstacle == rock){
@@ -189,7 +184,7 @@ public class GameScreen implements Screen {
                 // Show explosion image for a short time
                 if (TimeUtils.nanoTime() - bomb.explosionStartTime < 500_000_000L) {  // Show for 0.5 seconds
                     game.batch.draw(explosionImage, bomb.rect.x, bomb.rect.y, bomb.rect.width, bomb.rect.height);
-                    float playerDistance = distance(player.x + player.width / 2, player.y + player.height / 2,
+                    float playerDistance = distance(player.getX() + player.getWidth() / 2, player.getY() + player.getHeight() / 2,
                         bomb.rect.x + bomb.rect.width / 2, bomb.rect.y + bomb.rect.height / 2);
                     if (playerDistance < bomb.explosionRadius) {
                         System.out.println(playerDistance);
@@ -228,22 +223,15 @@ public class GameScreen implements Screen {
         drawHPBar();
         drawEnemyHPBar();
 
-        // to be removed as the game is not going to be drag to move
-        if (Gdx.input.isTouched()) {
-            Vector3 touchPos = new Vector3();
-            touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
-            camera.unproject(touchPos);
-            player.x = touchPos.x - 64 / 2;
-            player.y = touchPos.y - 64 / 2;
-        }
+
         if (Gdx.input.isKeyPressed(Keys.LEFT))
-            player.x -= 200 * Gdx.graphics.getDeltaTime();
+            player.setX(player.getX() - 200 * Gdx.graphics.getDeltaTime());
         if (Gdx.input.isKeyPressed(Keys.RIGHT))
-            player.x += 200 * Gdx.graphics.getDeltaTime();
+            player.setX(player.getX() + 200 * Gdx.graphics.getDeltaTime());
         if (Gdx.input.isKeyPressed(Keys.UP))
-            player.y += 200 * Gdx.graphics.getDeltaTime();
+            player.setY(player.getY() + 200 * Gdx.graphics.getDeltaTime());
         if (Gdx.input.isKeyPressed(Keys.DOWN))
-            player.y -= 200 * Gdx.graphics.getDeltaTime();
+            player.setY(player.getY() - 200 * Gdx.graphics.getDeltaTime());
         if (Gdx.input.isKeyPressed(Keys.A)){
             doDamage();
             currentPlayerStance = playerAttackStance;
@@ -252,7 +240,7 @@ public class GameScreen implements Screen {
         }
         if (Gdx.input.isKeyPressed(Keys.E) && currentTime - lastBombDropTime >= cooldownTime) {
             // Create a new bomb
-            Rectangle bombRect = new Rectangle(player.x, player.y, 64, 64);
+            Rectangle bombRect = new Rectangle(player.getX(), player.getY(), 64, 64);
             Bomb bomb = new Bomb(bombRect);
             bombs.add(bomb);
             lastBombDropTime = currentTime;
@@ -263,10 +251,10 @@ public class GameScreen implements Screen {
 
 
         // make sure the bucket stays within the screen bounds
-        if (player.x < 0)
-            player.x = 0;
-        if (player.x > 1280 - 64)
-            player.x = 1280 - 64;
+        if (player.getX() < 0)
+            player.setX(0);
+        if (player.getX() > 1280 - 64)
+            player.setX(1280 - 64);
 
     }
 
@@ -305,14 +293,14 @@ public class GameScreen implements Screen {
 
     private void checkCollision(){
         for (Rectangle obstacle : obstacles) {
-            if (player.overlaps(obstacle)) {
+            if (player.playerRect.overlaps(obstacle)) {
                 movePlayerBack();
             }
         }
     }
 
     private void doDamage(){
-        if(player.overlaps(enemy)){
+        if(player.playerRect.overlaps(enemy)){
             // this is being reused. Will make a function
             if (TimeUtils.timeSinceMillis(lastDamageTimePlayer) >= damageIntervalPlayer) {
                 enemyTakeDamage(20); // Player takes 10 damage every 2 seconds
@@ -325,7 +313,7 @@ public class GameScreen implements Screen {
 
     private void checkDamage(){
         for (Rectangle E : enemies) {
-            if (player.overlaps(E)) {
+            if (player.playerRect.overlaps(E)) {
                 movePlayerBack();
                 if (TimeUtils.timeSinceMillis(lastDamageTimeEnemy) >= damageIntervalEnemy) {
                     playerTakeDamage(10); // Player takes 10 damage every 2 seconds
@@ -337,16 +325,16 @@ public class GameScreen implements Screen {
 
     private void movePlayerBack() {
         if (Gdx.input.isKeyPressed(Keys.LEFT)) {
-            player.x += 200 * Gdx.graphics.getDeltaTime();
+            player.setX(player.getX() + 200 * Gdx.graphics.getDeltaTime());
         }
         if (Gdx.input.isKeyPressed(Keys.RIGHT)) {
-            player.x -= 200 * Gdx.graphics.getDeltaTime();
+            player.setX(player.getX() - 200 * Gdx.graphics.getDeltaTime());
         }
         if (Gdx.input.isKeyPressed(Keys.UP)) {
-            player.y -= 200 * Gdx.graphics.getDeltaTime();
+            player.setY(player.getY() - 200 * Gdx.graphics.getDeltaTime());
         }
         if (Gdx.input.isKeyPressed(Keys.DOWN)) {
-            player.y += 200 * Gdx.graphics.getDeltaTime();
+            player.setY(player.getY() + 200 * Gdx.graphics.getDeltaTime());
         }
     }
 
@@ -359,11 +347,11 @@ public class GameScreen implements Screen {
 
         // Draw the background of the HP bar (gray)
         shapeRenderer.setColor(Color.RED);
-        shapeRenderer.rect(player.x, player.y + player.height + 10, hpBarWidth, hpBarHeight);
+        shapeRenderer.rect(player.getX(), player.getY() + player.getHeight() + 10, hpBarWidth, hpBarHeight);
 
         // Draw the actual HP bar (red)
         shapeRenderer.setColor(Color.GREEN);
-        shapeRenderer.rect(player.x, player.y + player.height + 10, currentHPWidth, hpBarHeight);
+        shapeRenderer.rect(player.getX(), player.getY() + player.getHeight() + 10, currentHPWidth, hpBarHeight);
 
         shapeRenderer.end();
     }
@@ -435,16 +423,6 @@ public class GameScreen implements Screen {
             this.spawnTime = TimeUtils.nanoTime(); // Capture when the bomb was placed
         }
     }
-    public class Player {
-        int health = 100;  // Player's health
 
-        public void takeDamage(int damage) {
-            health -= damage;
-            if (health <= 0) {
-                // Handle player death (e.g., respawn or game over)
-                System.out.println("Player is dead!");
-            }
-        }
-    }
 
 }
