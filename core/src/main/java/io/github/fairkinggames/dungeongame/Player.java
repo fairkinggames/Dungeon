@@ -7,7 +7,7 @@ import com.badlogic.gdx.math.Rectangle;
 public class Player {
     private int maxHP;
     private int health;
-    public Rectangle playerRect;
+    private Rectangle playerRect;
 
     public Player(float x, float y, float width, float height) {
         maxHP = 100;
@@ -40,11 +40,12 @@ public class Player {
     public int getMaxHP(){
         return maxHP;
     }
-
     public int getHealth() {
         return health;
     }
-
+    public Rectangle getPlayerRect(){
+        return playerRect;
+    }
     public void setX(float newX){
         playerRect.x = newX;
     }

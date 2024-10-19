@@ -38,15 +38,12 @@ public class GameScreen implements Screen {
     Rectangle rock;
     Rectangle tree;
     Player player;
-    Rectangle enemy;
+    Array<Enemy> enemies;
 
     // list of rocks and trees to be created. List<GameObject> obstacles;
 
     Array<Rectangle> obstacles;
-    Array<Rectangle> enemies;
 
-    int enemyMaxHp = 100;
-    int enemyCurrentHp = 100;
 
     long lastDamageTimeEnemy = 0;
     long lastDamageTimePlayer = 0;
@@ -60,7 +57,6 @@ public class GameScreen implements Screen {
     // To draw HP bar
     ShapeRenderer shapeRenderer;
 
-
     Array<Bomb> bombs;
 
 
@@ -70,14 +66,12 @@ public class GameScreen implements Screen {
         shapeRenderer = new ShapeRenderer();
 
         obstacles = new Array<Rectangle>();
-        enemies = new Array<Rectangle>();
         bombs = new Array<>();
 
         bombImage = new Texture(Gdx.files.internal("AIbomb.png"));
         explosionImage = new Texture(Gdx.files.internal("AIexplosion.png"));
 
         // load the images for the background, rock, tree, and player class
-        //backgroundImage = new Texture(Gdx.files.internal("ph_bgyellow.png"));
         rockImage = new Texture(Gdx.files.internal("ph_rock.png"));
         treeImage = new Texture(Gdx.files.internal("ph_tree.png"));
         playerNormalStance = new Texture(Gdx.files.internal("AIpaladin.png"));
@@ -117,12 +111,9 @@ public class GameScreen implements Screen {
         rock.height = 64;
         obstacles.add(rock);
 
-        enemy = new Rectangle();
-        enemy.x = 100;
-        enemy.y = 100;
-        enemy.width = 64;
-        enemy.height = 64;
-        enemies.add(enemy);
+        enemies = new Array<>();
+        enemies.add(new Enemy(200, 200, 64, 64));
+        enemies.add(new Enemy(400, 400, 64, 64));
 
 
         surroundWithTrees();
@@ -145,7 +136,6 @@ public class GameScreen implements Screen {
         game.batch.begin();
         game.batch.draw(backgroundImage, 0, 0, 1280, 720);
         game.font.draw(game.batch, "Your HP: " + player.getHealth(), 0, 480);
-        game.font.draw(game.batch, "Enemy HP: " + enemyCurrentHp, 0, 380);
         player.render(game.batch, currentPlayerStance);
 
         for (Rectangle obstacle : obstacles) {
@@ -158,12 +148,9 @@ public class GameScreen implements Screen {
         }
 
         //Rename this E later, enemy is not a good name, should likely be types of enemies.
-        for (Rectangle E : enemies) {
-            if (E == enemy){
-                game.batch.draw(enemyImage, enemy.x, enemy.y, enemy.width, enemy.height);
-            }
+        for (Enemy enemy : enemies) {
+            enemy.render(game.batch, enemyImage);
         }
-
 
 
         Iterator<Bomb> iter = bombs.iterator();
@@ -182,13 +169,13 @@ public class GameScreen implements Screen {
                         // Apply damage to the player
                         player.takeDamage(50);  // Apply 20 damage (adjust as needed)
                     }
-                    for (Rectangle enemy : enemies) {
-                        float enemyDistance = distance(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2,
+                    for (Enemy enemy : enemies) {
+                        float enemyDistance = distance(enemy.getX() + enemy.getWidth() / 2, enemy.getY() + enemy.getHeight() / 2,
                             bomb.rect.x + bomb.rect.width / 2, bomb.rect.y + bomb.rect.height / 2);
 
                         if (enemyDistance < bomb.explosionRadius) {
                             // Apply damage to the enemy
-                            enemyTakeDamage(20);  // Apply 20 damage (adjust as needed)
+                            enemy.takeDamage(20);  // Apply 20 damage (adjust as needed)
                         }
                     }
                 } else {
@@ -280,25 +267,28 @@ public class GameScreen implements Screen {
 
     private void checkCollision(){
         for (Rectangle obstacle : obstacles) {
-            if (player.playerRect.overlaps(obstacle)) {
+            if (player.getPlayerRect().overlaps(obstacle)) {
                 movePlayerBack();
             }
         }
     }
 
     private void doDamage(){
-        if(player.playerRect.overlaps(enemy)){
-            // this is being reused. Will make a function
-            if (TimeUtils.timeSinceMillis(lastDamageTimePlayer) >= damageIntervalPlayer) {
-                enemyTakeDamage(20); // Player takes 10 damage every 2 seconds
-                lastDamageTimePlayer = TimeUtils.millis(); // Update the time when the last damage was taken
+        for (Enemy enemy : enemies){
+            if(player.getPlayerRect().overlaps(enemy.getRect())){
+                // this is being reused. Will make a function
+                if (TimeUtils.timeSinceMillis(lastDamageTimePlayer) >= damageIntervalPlayer) {
+                    enemy.takeDamage(20); // Player takes 10 damage every 2 seconds
+                    lastDamageTimePlayer = TimeUtils.millis(); // Update the time when the last damage was taken
+                }
             }
         }
+
     }
 
     private void checkDamage(){
-        for (Rectangle E : enemies) {
-            if (player.playerRect.overlaps(E)) {
+        for (Enemy enemy : enemies) {
+            if (player.getPlayerRect().overlaps(enemy.getRect())) {
                 movePlayerBack();
                 if (TimeUtils.timeSinceMillis(lastDamageTimeEnemy) >= damageIntervalEnemy) {
                     player.takeDamage(10); // Player takes 10 damage every 2 seconds
@@ -342,28 +332,23 @@ public class GameScreen implements Screen {
     }
 
     private void drawEnemyHPBar() {
-        // Calculate the width of the HP bar based on the player's current HP
-        float currentHPWidth = (enemyCurrentHp / (float)enemyMaxHp) * hpBarWidth;
+        for (Enemy enemy : enemies) {
+            // Calculate the width of the HP bar based on the player's current HP
+            float currentHPWidth = (enemy.getHealth() / (float)enemy.getMaxHP()) * hpBarWidth;
+            // Set the color and draw the HP bar above the player
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-        // Set the color and draw the HP bar above the player
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            // Draw the background of the HP bar (gray)
+            shapeRenderer.setColor(Color.RED);
+            shapeRenderer.rect(enemy.getX(), enemy.getY() + enemy.getHeight() + 10, hpBarWidth, hpBarHeight);
 
-        // Draw the background of the HP bar (gray)
-        shapeRenderer.setColor(Color.RED);
-        shapeRenderer.rect(enemy.x, enemy.y + enemy.height + 10, hpBarWidth, hpBarHeight);
+            // Draw the actual HP bar (red)
+            shapeRenderer.setColor(Color.GREEN);
+            shapeRenderer.rect(enemy.getX(), enemy.getY() + enemy.getHeight() + 10, currentHPWidth, hpBarHeight);
 
-        // Draw the actual HP bar (red)
-        shapeRenderer.setColor(Color.GREEN);
-        shapeRenderer.rect(enemy.x, enemy.y + enemy.height + 10, currentHPWidth, hpBarHeight);
-
-        shapeRenderer.end();
-    }
-
-    public void enemyTakeDamage(int damage) {
-        enemyCurrentHp -= damage;
-        if (enemyCurrentHp < 0) {
-            enemyCurrentHp = 0; // Player's health shouldn't go below 0
+            shapeRenderer.end();
         }
+
     }
 
     private void surroundWithTrees() {
