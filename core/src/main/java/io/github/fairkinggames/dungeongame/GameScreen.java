@@ -62,9 +62,6 @@ public class GameScreen implements Screen {
 
         shapeRenderer = new ShapeRenderer();
 
-
-        bombs = new Array<>();
-
         bombImage = new Texture(Gdx.files.internal("AIbomb.png"));
         explosionImage = new Texture(Gdx.files.internal("AIexplosion.png"));
 
@@ -82,7 +79,6 @@ public class GameScreen implements Screen {
         rainMusic.setVolume(0.5f);
         rainMusic.setLooping(true);
 
-
         // create the camera and the SpriteBatch
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 1280, 720);
@@ -98,7 +94,7 @@ public class GameScreen implements Screen {
         obstacles.add(new Tree(100, 100, 64, 64));  // Tree
         obstacles.add(new Rock(400, 200, 64, 64));  // Rock
 
-
+        bombs = new Array<>();
 
         surroundWithTrees();
 
@@ -118,6 +114,8 @@ public class GameScreen implements Screen {
         // begin a new batch and draw the bucket and
         // all drops
         game.batch.begin();
+
+
         game.batch.draw(backgroundImage, 0, 0, 1280, 720);
         game.font.draw(game.batch, "Your HP: " + player.getHealth(), 0, 480);
         player.render(game.batch, currentPlayerStance);
@@ -135,42 +133,49 @@ public class GameScreen implements Screen {
             enemy.render(game.batch, enemyImage);
         }
 
-
         Iterator<Bomb> iter = bombs.iterator();
         while (iter.hasNext()) {
             Bomb bomb = iter.next();
             // Check if the bomb is in the exploding state
-            if (bomb.isExploding) {
-                // Show explosion image for a short time
-                if (TimeUtils.nanoTime() - bomb.explosionStartTime < 500_000_000L) {  // Show for 0.5 seconds
-                    game.batch.draw(explosionImage, bomb.rect.x, bomb.rect.y, bomb.rect.width, bomb.rect.height);
+            if (bomb.isExploding()) {
+                // Only apply damage once during the explosion
+                if (!bomb.damageApplied) {
+                    // Check distance to the player
                     float playerDistance = distance(player.getX() + player.getWidth() / 2, player.getY() + player.getHeight() / 2,
-                        bomb.rect.x + bomb.rect.width / 2, bomb.rect.y + bomb.rect.height / 2);
-                    if (playerDistance < bomb.explosionRadius) {
-                        System.out.println(playerDistance);
-                        System.out.println(bomb.explosionRadius);
-                        // Apply damage to the player
-                        player.takeDamage(50);  // Apply 20 damage (adjust as needed)
+                        bomb.getRect().x + bomb.getRect().width / 2, bomb.getRect().y + bomb.getRect().height / 2);
+                    if (playerDistance < bomb.getExplosionRadius()) {
+                        // Apply damage to the player once
+                        player.takeDamage(50);
                     }
+
+                    // Check distance to enemies
                     for (Enemy enemy : enemies) {
                         float enemyDistance = distance(enemy.getX() + enemy.getWidth() / 2, enemy.getY() + enemy.getHeight() / 2,
-                            bomb.rect.x + bomb.rect.width / 2, bomb.rect.y + bomb.rect.height / 2);
+                            bomb.getRect().x + bomb.getRect().width / 2, bomb.getRect().y + bomb.getRect().height / 2);
 
-                        if (enemyDistance < bomb.explosionRadius) {
-                            // Apply damage to the enemy
-                            enemy.takeDamage(20);  // Apply 20 damage (adjust as needed)
+                        if (enemyDistance < bomb.getExplosionRadius()) {
+                            // Apply damage to the enemy once
+                            enemy.takeDamage(20);  // Adjust damage amount as needed
                         }
                     }
+
+                    // Mark the bomb as having applied damage
+                    bomb.damageApplied = true;
+                }
+                // Show explosion image for a short time
+                if (TimeUtils.nanoTime() - bomb.getExplosionStartTime() < 1e9) {  // Show for 0.5 seconds
+                    game.batch.draw(explosionImage, bomb.getRect().x, bomb.getRect().y, bomb.getRect().width, bomb.getRect().height);
+
                 } else {
                     // Explosion time is over, remove the bomb
                     iter.remove();
                 }
             } else {
                 // Regular bomb state
-                game.batch.draw(bombImage, bomb.rect.x, bomb.rect.y, bomb.rect.width, bomb.rect.height);
+                game.batch.draw(bombImage, bomb.getRect().x, bomb.getRect().y, bomb.getRect().width, bomb.getRect().height);
 
                 // Check if 3 seconds (3e9 nanoseconds) have passed since the bomb was placed
-                if (TimeUtils.nanoTime() - bomb.spawnTime > 3e9) {
+                if (TimeUtils.nanoTime() - bomb.getSpawnTime() > 3e9) {
                     // Bomb should start exploding
                     bomb.isExploding = true;
                     bomb.explosionStartTime = TimeUtils.nanoTime();  // Record explosion start time
@@ -199,10 +204,7 @@ public class GameScreen implements Screen {
             currentPlayerStance = playerNormalStance;
         }
         if (Gdx.input.isKeyPressed(Keys.E) && currentTime - lastBombDropTime >= cooldownTime) {
-            // Create a new bomb
-            Rectangle bombRect = new Rectangle(player.getX(), player.getY(), 64, 64);
-            Bomb bomb = new Bomb(bombRect);
-            bombs.add(bomb);
+            bombs.add(new Bomb(player.getX(), player.getY(), 64, 64));
             lastBombDropTime = currentTime;
         }
 
@@ -247,7 +249,6 @@ public class GameScreen implements Screen {
         rainMusic.dispose();
         backgroundImage.dispose();
     }
-
 
     private void doDamage(){
         for (Enemy enemy : enemies){
@@ -353,20 +354,12 @@ public class GameScreen implements Screen {
         }
 
     }
+    private void renderBombs() {
+
+    }
 
     private float distance(float x1, float y1, float x2, float y2) {
         return (float) Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
     }
-    class Bomb {
-        Rectangle rect;
-        long spawnTime;
-        boolean isExploding = false;  // Whether the bomb is in the exploding state
-        long explosionStartTime;  // Time when the explosion started (for timing)
-        float explosionRadius = 100f;
 
-        public Bomb(Rectangle rect) {
-            this.rect = rect;
-            this.spawnTime = TimeUtils.nanoTime(); // Capture when the bomb was placed
-        }
-    }
 }
