@@ -7,7 +7,7 @@ import com.badlogic.gdx.math.Rectangle;
 public class Enemy {
     private int maxHP;
     private int health;
-    public Rectangle enemyRect;
+    private Rectangle enemyRect;
 
     public Enemy(float x, float y, float width, float height) {
         maxHP = 100;

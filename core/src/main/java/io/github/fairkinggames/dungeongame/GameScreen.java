@@ -35,15 +35,12 @@ public class GameScreen implements Screen {
     Texture enemyImage;
     Texture bombImage;
     Texture explosionImage;
-    Rectangle rock;
-    Rectangle tree;
     Player player;
     Array<Enemy> enemies;
 
     // list of rocks and trees to be created. List<GameObject> obstacles;
 
-    Array<Rectangle> obstacles;
-
+    Array<Obstacle> obstacles;
 
     long lastDamageTimeEnemy = 0;
     long lastDamageTimePlayer = 0;
@@ -65,7 +62,7 @@ public class GameScreen implements Screen {
 
         shapeRenderer = new ShapeRenderer();
 
-        obstacles = new Array<Rectangle>();
+
         bombs = new Array<>();
 
         bombImage = new Texture(Gdx.files.internal("AIbomb.png"));
@@ -93,27 +90,14 @@ public class GameScreen implements Screen {
         // create a Rectangle to logically represent the player
         player = new Player(840, 360, 64, 64);
 
-        // create a Rectangle to logically represent the tree
-        tree = new Rectangle();
-        tree.x = 32; // top left tree
-        tree.y = 32;
-        // the bottom screen edge
-        tree.width = 64;
-        tree.height = 64;
-        obstacles.add(tree);
-
-        // create a Rectangle to logically represent the rock
-        rock = new Rectangle();
-        rock.x = 1280 / 2 - 64 / 2; // center the rock
-        rock.y = 720 /2 - 64 / 2;
-        // the bottom screen edge
-        rock.width = 64;
-        rock.height = 64;
-        obstacles.add(rock);
-
         enemies = new Array<>();
         enemies.add(new Enemy(200, 200, 64, 64));
         enemies.add(new Enemy(400, 400, 64, 64));
+
+        obstacles = new Array<>();
+        obstacles.add(new Tree(100, 100, 64, 64));  // Tree
+        obstacles.add(new Rock(400, 200, 64, 64));  // Rock
+
 
 
         surroundWithTrees();
@@ -138,12 +122,11 @@ public class GameScreen implements Screen {
         game.font.draw(game.batch, "Your HP: " + player.getHealth(), 0, 480);
         player.render(game.batch, currentPlayerStance);
 
-        for (Rectangle obstacle : obstacles) {
-            if (obstacle == rock){
-                game.batch.draw(rockImage, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-            }
-            else {
-                game.batch.draw(treeImage, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        for (Obstacle obstacle : obstacles) {
+            if (obstacle instanceof Tree) {
+                obstacle.render(game.batch, treeImage);
+            } else if (obstacle instanceof Rock) {
+                obstacle.render(game.batch, rockImage);
             }
         }
 
@@ -223,8 +206,8 @@ public class GameScreen implements Screen {
             lastBombDropTime = currentTime;
         }
 
-        checkCollision();
         checkDamage();
+        checkCollision();
 
 
         // make sure the bucket stays within the screen bounds
@@ -265,13 +248,6 @@ public class GameScreen implements Screen {
         backgroundImage.dispose();
     }
 
-    private void checkCollision(){
-        for (Rectangle obstacle : obstacles) {
-            if (player.getPlayerRect().overlaps(obstacle)) {
-                movePlayerBack();
-            }
-        }
-    }
 
     private void doDamage(){
         for (Enemy enemy : enemies){
@@ -284,6 +260,14 @@ public class GameScreen implements Screen {
             }
         }
 
+    }
+
+    private void checkCollision(){
+        for (Obstacle obstacle : obstacles) {
+            if (player.getPlayerRect().overlaps(obstacle.getRect())) {
+                movePlayerBack();
+            }
+        }
     }
 
     private void checkDamage(){
@@ -360,11 +344,11 @@ public class GameScreen implements Screen {
         int screenHeight = 720;
         for (int x = 0; x < screenWidth; x += treeWidth) {
             // Top edge
-            Rectangle treeTop = new Rectangle(x, screenHeight - treeHeight, treeWidth, treeHeight);
+            Obstacle treeTop = new Tree(x, screenHeight - treeHeight, treeWidth, treeHeight);
             obstacles.add(treeTop);
 
             // Bottom edge
-            Rectangle treeBottom = new Rectangle(x, 0, treeWidth, treeHeight);
+            Obstacle treeBottom = new Tree(x, 0, treeWidth, treeHeight);
             obstacles.add(treeBottom);
         }
 
@@ -385,6 +369,4 @@ public class GameScreen implements Screen {
             this.spawnTime = TimeUtils.nanoTime(); // Capture when the bomb was placed
         }
     }
-
-
 }
