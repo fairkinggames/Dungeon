@@ -22,13 +22,8 @@ public class GameScreen implements Screen {
     final Dungeon game;
 
     // All these below to be removed
-    Texture dropImage;
-    Texture bucketImage;
-    Sound dropSound;
     Music rainMusic;
     OrthographicCamera camera;
-    Rectangle bucket;
-    int dropsGathered;
 
     // Game Assets
     Texture backgroundImage;
@@ -50,9 +45,6 @@ public class GameScreen implements Screen {
     Array<Rectangle> obstacles;
     Array<Rectangle> enemies;
 
-
-    int playerMaxHp = 100;
-    int playerCurrentHp = 100;
     int enemyMaxHp = 100;
     int enemyCurrentHp = 100;
 
@@ -81,9 +73,6 @@ public class GameScreen implements Screen {
         enemies = new Array<Rectangle>();
         bombs = new Array<>();
 
-        // To be removed
-        dropImage = new Texture(Gdx.files.internal("drop.png"));
-        bucketImage = new Texture(Gdx.files.internal("bucket.png"));
         bombImage = new Texture(Gdx.files.internal("AIbomb.png"));
         explosionImage = new Texture(Gdx.files.internal("AIexplosion.png"));
 
@@ -98,9 +87,10 @@ public class GameScreen implements Screen {
         backgroundImage = new Texture(Gdx.files.internal("ph_bgyellow.png"));
 
         // load the drop sound effect and the rain background "music"
-        dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.mp3"));
         rainMusic = Gdx.audio.newMusic(Gdx.files.internal("music.mp3"));
+        rainMusic.setVolume(0.5f);
         rainMusic.setLooping(true);
+
 
         // create the camera and the SpriteBatch
         camera = new OrthographicCamera();
@@ -154,7 +144,7 @@ public class GameScreen implements Screen {
         // all drops
         game.batch.begin();
         game.batch.draw(backgroundImage, 0, 0, 1280, 720);
-        game.font.draw(game.batch, "Your HP: " + playerCurrentHp, 0, 480);
+        game.font.draw(game.batch, "Your HP: " + player.getHealth(), 0, 480);
         game.font.draw(game.batch, "Enemy HP: " + enemyCurrentHp, 0, 380);
         player.render(game.batch, currentPlayerStance);
 
@@ -190,7 +180,7 @@ public class GameScreen implements Screen {
                         System.out.println(playerDistance);
                         System.out.println(bomb.explosionRadius);
                         // Apply damage to the player
-                        playerTakeDamage(50);  // Apply 20 damage (adjust as needed)
+                        player.takeDamage(50);  // Apply 20 damage (adjust as needed)
                     }
                     for (Rectangle enemy : enemies) {
                         float enemyDistance = distance(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2,
@@ -283,10 +273,7 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
-        dropImage.dispose();
-        bucketImage.dispose();
         playerNormalStance.dispose();
-        dropSound.dispose();
         rainMusic.dispose();
         backgroundImage.dispose();
     }
@@ -309,14 +296,12 @@ public class GameScreen implements Screen {
         }
     }
 
-
-
     private void checkDamage(){
         for (Rectangle E : enemies) {
             if (player.playerRect.overlaps(E)) {
                 movePlayerBack();
                 if (TimeUtils.timeSinceMillis(lastDamageTimeEnemy) >= damageIntervalEnemy) {
-                    playerTakeDamage(10); // Player takes 10 damage every 2 seconds
+                    player.takeDamage(10); // Player takes 10 damage every 2 seconds
                     lastDamageTimeEnemy = TimeUtils.millis(); // Update the time when the last damage was taken
                 }
             }
@@ -340,7 +325,7 @@ public class GameScreen implements Screen {
 
     private void drawHPBar() {
         // Calculate the width of the HP bar based on the player's current HP
-        float currentHPWidth = (playerCurrentHp / (float)playerMaxHp) * hpBarWidth;
+        float currentHPWidth = (player.getHealth() / (float)player.getMaxHP()) * hpBarWidth;
 
         // Set the color and draw the HP bar above the player
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -372,14 +357,6 @@ public class GameScreen implements Screen {
         shapeRenderer.rect(enemy.x, enemy.y + enemy.height + 10, currentHPWidth, hpBarHeight);
 
         shapeRenderer.end();
-    }
-
-
-    public void playerTakeDamage(int damage) {
-        playerCurrentHp -= damage;
-        if (playerCurrentHp < 0) {
-            playerCurrentHp = 0; // Player's health shouldn't go below 0
-        }
     }
 
     public void enemyTakeDamage(int damage) {

@@ -5,10 +5,12 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
 
 public class Player {
+    private int maxHP;
     private int health;
     public Rectangle playerRect;
 
     public Player(float x, float y, float width, float height) {
+        maxHP = 100;
         health = 100;
         playerRect = new Rectangle(x, y, width, height);
     }
@@ -16,7 +18,7 @@ public class Player {
     public void takeDamage(int damage) {
         health -= damage;
         if (health <= 0) {
-            System.out.println("Player is dead!");
+            health = 0;
             // TODO Handle death
         }
     }
@@ -35,6 +37,14 @@ public class Player {
     public float getHeight(){
         return playerRect.height;
     }
+    public int getMaxHP(){
+        return maxHP;
+    }
+
+    public int getHealth() {
+        return health;
+    }
+
     public void setX(float newX){
         playerRect.x = newX;
     }
