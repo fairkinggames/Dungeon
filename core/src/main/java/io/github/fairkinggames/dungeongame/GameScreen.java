@@ -132,56 +132,7 @@ public class GameScreen implements Screen {
         for (Enemy enemy : enemies) {
             enemy.render(game.batch, enemyImage);
         }
-
-        Iterator<Bomb> iter = bombs.iterator();
-        while (iter.hasNext()) {
-            Bomb bomb = iter.next();
-            // Check if the bomb is in the exploding state
-            if (bomb.isExploding()) {
-                // Only apply damage once during the explosion
-                if (!bomb.damageApplied) {
-                    // Check distance to the player
-                    float playerDistance = distance(player.getX() + player.getWidth() / 2, player.getY() + player.getHeight() / 2,
-                        bomb.getRect().x + bomb.getRect().width / 2, bomb.getRect().y + bomb.getRect().height / 2);
-                    if (playerDistance < bomb.getExplosionRadius()) {
-                        // Apply damage to the player once
-                        player.takeDamage(50);
-                    }
-
-                    // Check distance to enemies
-                    for (Enemy enemy : enemies) {
-                        float enemyDistance = distance(enemy.getX() + enemy.getWidth() / 2, enemy.getY() + enemy.getHeight() / 2,
-                            bomb.getRect().x + bomb.getRect().width / 2, bomb.getRect().y + bomb.getRect().height / 2);
-
-                        if (enemyDistance < bomb.getExplosionRadius()) {
-                            // Apply damage to the enemy once
-                            enemy.takeDamage(20);  // Adjust damage amount as needed
-                        }
-                    }
-
-                    // Mark the bomb as having applied damage
-                    bomb.damageApplied = true;
-                }
-                // Show explosion image for a short time
-                if (TimeUtils.nanoTime() - bomb.getExplosionStartTime() < 1e9) {  // Show for 0.5 seconds
-                    game.batch.draw(explosionImage, bomb.getRect().x, bomb.getRect().y, bomb.getRect().width, bomb.getRect().height);
-
-                } else {
-                    // Explosion time is over, remove the bomb
-                    iter.remove();
-                }
-            } else {
-                // Regular bomb state
-                game.batch.draw(bombImage, bomb.getRect().x, bomb.getRect().y, bomb.getRect().width, bomb.getRect().height);
-
-                // Check if 3 seconds (3e9 nanoseconds) have passed since the bomb was placed
-                if (TimeUtils.nanoTime() - bomb.getSpawnTime() > 3e9) {
-                    // Bomb should start exploding
-                    bomb.isExploding = true;
-                    bomb.explosionStartTime = TimeUtils.nanoTime();  // Record explosion start time
-                }
-            }
-        }
+        checkBomb();
 
         game.batch.end();
 
@@ -190,13 +141,13 @@ public class GameScreen implements Screen {
 
 
         if (Gdx.input.isKeyPressed(Keys.LEFT))
-            player.setX(player.getX() - 200 * Gdx.graphics.getDeltaTime());
+            player.moveLeft(Gdx.graphics.getDeltaTime());
         if (Gdx.input.isKeyPressed(Keys.RIGHT))
-            player.setX(player.getX() + 200 * Gdx.graphics.getDeltaTime());
+            player.moveRight(Gdx.graphics.getDeltaTime());
         if (Gdx.input.isKeyPressed(Keys.UP))
-            player.setY(player.getY() + 200 * Gdx.graphics.getDeltaTime());
+            player.moveUp(Gdx.graphics.getDeltaTime());
         if (Gdx.input.isKeyPressed(Keys.DOWN))
-            player.setY(player.getY() - 200 * Gdx.graphics.getDeltaTime());
+            player.moveDown(Gdx.graphics.getDeltaTime());
         if (Gdx.input.isKeyPressed(Keys.A)){
             doDamage();
             currentPlayerStance = playerAttackStance;
@@ -219,6 +170,7 @@ public class GameScreen implements Screen {
             player.setX(1280 - 64);
 
     }
+
 
     @Override
     public void resize(int width, int height) {
@@ -251,12 +203,12 @@ public class GameScreen implements Screen {
     }
 
     private void doDamage(){
+        Rectangle attackHitbox = player.getAttackHitbox();
         for (Enemy enemy : enemies){
-            if(player.getPlayerRect().overlaps(enemy.getRect())){
-                // this is being reused. Will make a function
+            if(attackHitbox.overlaps(enemy.getRect())){
                 if (TimeUtils.timeSinceMillis(lastDamageTimePlayer) >= damageIntervalPlayer) {
-                    enemy.takeDamage(20); // Player takes 10 damage every 2 seconds
-                    lastDamageTimePlayer = TimeUtils.millis(); // Update the time when the last damage was taken
+                    enemy.takeDamage(20); // Apply damage
+                    lastDamageTimePlayer = TimeUtils.millis(); // Update the damage time
                 }
             }
         }
@@ -354,8 +306,84 @@ public class GameScreen implements Screen {
         }
 
     }
-    private void renderBombs() {
 
+    private void checkBomb() {
+        Iterator<Bomb> iter = bombs.iterator();
+        while (iter.hasNext()) {
+            Bomb bomb = iter.next();
+            // Check if the bomb is in the exploding state
+            if (bomb.isExploding()) {
+                // Only apply damage once during the explosion
+                if (!bomb.damageApplied) {
+                    // Check distance to the player
+                    float playerDistance = distance(player.getX() + player.getWidth() / 2, player.getY() + player.getHeight() / 2,
+                        bomb.getRect().x + bomb.getRect().width / 2, bomb.getRect().y + bomb.getRect().height / 2);
+                    if (playerDistance < bomb.getExplosionRadius()) {
+                        // Apply damage to the player once
+                        player.takeDamage(50);
+                    }
+
+                    // Check distance to enemies
+                    for (Enemy enemy : enemies) {
+                        float enemyDistance = distance(enemy.getX() + enemy.getWidth() / 2, enemy.getY() + enemy.getHeight() / 2,
+                            bomb.getRect().x + bomb.getRect().width / 2, bomb.getRect().y + bomb.getRect().height / 2);
+
+                        if (enemyDistance < bomb.getExplosionRadius()) {
+                            // Apply damage to the enemy once
+                            enemy.takeDamage(20);  // Adjust damage amount as needed
+                        }
+                    }
+
+                    // Mark the bomb as having applied damage
+                    bomb.damageApplied = true;
+                }
+                // Show explosion image for a short time
+                if (TimeUtils.nanoTime() - bomb.getExplosionStartTime() < 1e9) {  // Show for 0.5 seconds
+                    game.batch.draw(explosionImage, bomb.getRect().x, bomb.getRect().y, bomb.getRect().width, bomb.getRect().height);
+
+                } else {
+                    // Explosion time is over, remove the bomb
+                    iter.remove();
+                }
+            } else {
+                // Regular bomb state
+                game.batch.draw(bombImage, bomb.getRect().x, bomb.getRect().y, bomb.getRect().width, bomb.getRect().height);
+
+                // Check if 3 seconds (3e9 nanoseconds) have passed since the bomb was placed
+                if (TimeUtils.nanoTime() - bomb.getSpawnTime() > 3e9) {
+                    // Bomb should start exploding
+                    bomb.isExploding = true;
+                    bomb.explosionStartTime = TimeUtils.nanoTime();  // Record explosion start time
+                }
+            }
+        }
+    }
+    // Helper method to check if the enemy is in the direction the player is facing
+    private boolean isEnemyInFacingDirection(Player player, Enemy enemy) {
+        String direction = player.getFacingDirection();
+        Rectangle playerRect = player.getPlayerRect();
+        Rectangle enemyRect = enemy.getRect();
+
+        switch (direction) {
+            case "LEFT":
+                // Enemy must be to the left of the player
+                return enemyRect.x < playerRect.x;
+
+            case "RIGHT":
+                // Enemy must be to the right of the player
+                return enemyRect.x > playerRect.x;
+
+            case "UP":
+                // Enemy must be above the player
+                return enemyRect.y > playerRect.y;
+
+            case "DOWN":
+                // Enemy must be below the player
+                return enemyRect.y < playerRect.y;
+
+            default:
+                return false;  // If direction is unknown, return false
+        }
     }
 
     private float distance(float x1, float y1, float x2, float y2) {
