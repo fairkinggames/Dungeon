@@ -12,7 +12,10 @@ public class Player {
     private Rectangle playerRect;
     private float attackRange = 50;
     private float attackWidth = 64;
-    private Texture swordImage;
+    private Texture swordLeft;
+    private Texture swordRight;
+    private Texture swordUp;
+    private Texture swordDown;
 
 
     public Player(float x, float y, float width, float height) {
@@ -21,7 +24,10 @@ public class Player {
         playerRect = new Rectangle(x, y, width, height);
 
         // Let's set this as default weapon for now.
-        swordImage = new Texture(Gdx.files.internal("AIsword.png"));
+        swordDown = new Texture(Gdx.files.internal("AIsword_D.png"));
+        swordUp = new Texture(Gdx.files.internal("AIsword_U.png"));
+        swordLeft = new Texture(Gdx.files.internal("AIsword_L.png"));
+        swordRight = new Texture(Gdx.files.internal("AIsword_R.png"));
     }
 
     public void takeDamage(int damage) {
@@ -33,7 +39,7 @@ public class Player {
     }
     public void render(SpriteBatch batch, Texture playerTexture) {
         batch.draw(playerTexture, playerRect.x, playerRect.y, playerRect.width, playerRect.height);
-        drawSword(batch, swordImage);
+        drawSword(batch);
     }
     public float getX(){
         return playerRect.x;
@@ -109,32 +115,38 @@ public class Player {
     }
 
     // Not a perfect method for different types of weapons, will change when implementing other weapons.
-    private void drawSword(SpriteBatch batch, Texture weaponTexture) {
+    private void drawSword(SpriteBatch batch) {
         float swordOffsetX = 0;
         float swordOffsetY = 0;
-        float swordWidth = 32;
+        float swordWidth = 64;
         float swordHeight = 64;
+
+        Texture swordImage = swordDown;
 
         switch (facingDirection) {
             case "LEFT":
+                swordImage = swordLeft;
                 swordOffsetX = -swordWidth;  // Sword to the left of the player
                 swordOffsetY = playerRect.height / 2 - swordHeight / 2;  // Vertically centered
                 break;
             case "RIGHT":
+                swordImage = swordRight;
                 swordOffsetX = playerRect.width;  // Sword to the right of the player
                 swordOffsetY = playerRect.height / 2 - swordHeight / 2;  // Vertically centered
                 break;
             case "UP":
+                swordImage = swordUp;
                 swordOffsetX = playerRect.width / 2 - swordWidth / 2;  // Horizontally centered
                 swordOffsetY = playerRect.height;  // Sword above the player
                 break;
             case "DOWN":
+                swordImage = swordDown;
                 swordOffsetX = playerRect.width / 2 - swordWidth / 2;  // Horizontally centered
                 swordOffsetY = -swordHeight;  // Sword below the player
                 break;
         }
 
         // Draw the sword at the calculated position
-        batch.draw(weaponTexture, playerRect.x + swordOffsetX, playerRect.y + swordOffsetY, swordWidth, swordHeight);
+        batch.draw(swordImage, playerRect.x + swordOffsetX, playerRect.y + swordOffsetY, swordWidth, swordHeight);
     }
 }
