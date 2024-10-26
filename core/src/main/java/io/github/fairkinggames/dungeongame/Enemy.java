@@ -1,5 +1,6 @@
 package io.github.fairkinggames.dungeongame;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
@@ -8,21 +9,25 @@ public class Enemy {
     private int maxHP;
     private int health;
     private Rectangle enemyRect;
+    private Texture enemyImage;
+    private Texture enemyDeath;
 
     public Enemy(float x, float y, float width, float height) {
         maxHP = 100;
         health = 100;
         enemyRect = new Rectangle(x, y, width, height);
+        enemyImage = new Texture(Gdx.files.internal("AImonster.png"));
+        enemyDeath = new Texture(Gdx.files.internal("AIdead.png"));
     }
     public void takeDamage(int damage) {
         health -= damage;
         if (health <= 0) {
             health = 0;
-            // TODO Handle death
+            enemyImage = enemyDeath;
         }
     }
-    public void render(SpriteBatch batch, Texture enemyTexture) {
-        batch.draw(enemyTexture, enemyRect.x, enemyRect.y, enemyRect.width, enemyRect.height);
+    public void render(SpriteBatch batch) {
+        batch.draw(enemyImage, enemyRect.x, enemyRect.y, enemyRect.width, enemyRect.height);
     }
     public float getX(){
         return enemyRect.x;
@@ -41,6 +46,9 @@ public class Enemy {
     }
     public int getHealth() {
         return health;
+    }
+    public boolean isAlive(){
+        return (health>0);
     }
     public Rectangle getRect(){
         return enemyRect;

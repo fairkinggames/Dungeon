@@ -32,7 +32,7 @@ public class GameScreen implements Screen {
     Texture playerNormalStance;
     Texture playerAttackStance;
     Texture currentPlayerStance;
-    Texture enemyImage;
+
     Texture bombImage;
     Texture explosionImage;
     Player player;
@@ -71,7 +71,6 @@ public class GameScreen implements Screen {
         playerNormalStance = new Texture(Gdx.files.internal("AIpaladin.png"));
         playerAttackStance = new Texture(Gdx.files.internal("AIpaladinAtk.png"));
         currentPlayerStance = playerNormalStance;
-        enemyImage = new Texture(Gdx.files.internal("AImonster.png"));
         backgroundImage = new Texture(Gdx.files.internal("ph_bgyellow.png"));
 
         // load the drop sound effect and the rain background "music"
@@ -130,7 +129,7 @@ public class GameScreen implements Screen {
 
         //Rename this E later, enemy is not a good name, should likely be types of enemies.
         for (Enemy enemy : enemies) {
-            enemy.render(game.batch, enemyImage);
+            enemy.render(game.batch);
         }
         checkBomb();
 
@@ -205,7 +204,7 @@ public class GameScreen implements Screen {
     private void doDamage(){
         Rectangle attackHitbox = player.getAttackHitbox();
         for (Enemy enemy : enemies){
-            if(attackHitbox.overlaps(enemy.getRect())){
+            if(enemy.isAlive() && attackHitbox.overlaps(enemy.getRect())){
                 if (TimeUtils.timeSinceMillis(lastDamageTimePlayer) >= damageIntervalPlayer) {
                     enemy.takeDamage(20); // Apply damage
                     lastDamageTimePlayer = TimeUtils.millis(); // Update the damage time
@@ -225,7 +224,7 @@ public class GameScreen implements Screen {
 
     private void checkDamage(){
         for (Enemy enemy : enemies) {
-            if (player.getPlayerRect().overlaps(enemy.getRect())) {
+            if (enemy.isAlive() && player.getPlayerRect().overlaps(enemy.getRect())) {
                 movePlayerBack();
                 if (TimeUtils.timeSinceMillis(lastDamageTimeEnemy) >= damageIntervalEnemy) {
                     player.takeDamage(10); // Player takes 10 damage every 2 seconds
@@ -325,12 +324,14 @@ public class GameScreen implements Screen {
 
                     // Check distance to enemies
                     for (Enemy enemy : enemies) {
-                        float enemyDistance = distance(enemy.getX() + enemy.getWidth() / 2, enemy.getY() + enemy.getHeight() / 2,
-                            bomb.getRect().x + bomb.getRect().width / 2, bomb.getRect().y + bomb.getRect().height / 2);
+                        if (enemy.isAlive()){
+                            float enemyDistance = distance(enemy.getX() + enemy.getWidth() / 2, enemy.getY() + enemy.getHeight() / 2,
+                                bomb.getRect().x + bomb.getRect().width / 2, bomb.getRect().y + bomb.getRect().height / 2);
 
-                        if (enemyDistance < bomb.getExplosionRadius()) {
-                            // Apply damage to the enemy once
-                            enemy.takeDamage(20);  // Adjust damage amount as needed
+                            if (enemyDistance < bomb.getExplosionRadius()) {
+                                // Apply damage to the enemy once
+                                enemy.takeDamage(20);  // Adjust damage amount as needed
+                            }
                         }
                     }
 
