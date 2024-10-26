@@ -86,8 +86,9 @@ public class GameScreen implements Screen {
         player = new Player(840, 360, 64, 64);
 
         enemies = new Array<>();
-        enemies.add(new Enemy(200, 200, 64, 64));
-        enemies.add(new Enemy(400, 400, 64, 64));
+        enemies.add(new Enemy(200, 200, 64, 64, 100));
+        enemies.add(new Enemy(400, 400, 64, 64, 100));
+        enemies.add(new ChasingEnemy(500, 500, 64, 64, 50, 80));
 
         obstacles = new Array<>();
         obstacles.add(new Tree(100, 100, 64, 64));  // Tree
@@ -101,6 +102,19 @@ public class GameScreen implements Screen {
 
     @Override
     public void render(float delta) {
+        if (player.getHealth() <= 0) {  // Check if player's HP is zero
+            game.setScreen(new MainMenuScreen(game));  // Transition to main menu
+            dispose();  // Dispose of resources to avoid memory leaks
+            return;  // Stop further processing in this frame
+        }
+        for (Enemy enemy : enemies) {
+            //TODO im calling a lot of isAlive() at the moment, unsure if there is a better way to handle these in enemy class.
+            if (enemy.isAlive() && enemy instanceof ChasingEnemy) {
+                ((ChasingEnemy) enemy).update(delta, player);  // Pass player to chasing enemy
+            } else {
+                enemy.update(delta);  // Stationary enemy with no movement
+            }
+        }
         // clear the screen with a dark blue color.
         ScreenUtils.clear(Color.BLACK);
         // tell the camera to update its matrices.
@@ -127,7 +141,6 @@ public class GameScreen implements Screen {
             }
         }
 
-        //Rename this E later, enemy is not a good name, should likely be types of enemies.
         for (Enemy enemy : enemies) {
             enemy.render(game.batch);
         }
@@ -270,7 +283,7 @@ public class GameScreen implements Screen {
     private void drawEnemyHPBar() {
         for (Enemy enemy : enemies) {
             // Calculate the width of the HP bar based on the player's current HP
-            float currentHPWidth = (enemy.getHealth() / (float)enemy.getMaxHP()) * hpBarWidth;
+            float currentHPWidth = (enemy.getHealth() / (float)enemy.getMaxHp()) * hpBarWidth;
             // Set the color and draw the HP bar above the player
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 

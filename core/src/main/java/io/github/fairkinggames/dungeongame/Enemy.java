@@ -6,15 +6,15 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
 
 public class Enemy {
-    private int maxHP;
-    private int health;
-    private Rectangle enemyRect;
+    private int maxHp;
+    protected int health;
+    protected Rectangle enemyRect;
     private Texture enemyImage;
     private Texture enemyDeath;
 
-    public Enemy(float x, float y, float width, float height) {
-        maxHP = 100;
-        health = 100;
+    public Enemy(float x, float y, float width, float height, int hp) {
+        this.maxHp = hp;
+        this.health = hp;
         enemyRect = new Rectangle(x, y, width, height);
         enemyImage = new Texture(Gdx.files.internal("AImonster.png"));
         enemyDeath = new Texture(Gdx.files.internal("AIdead.png"));
@@ -41,11 +41,11 @@ public class Enemy {
     public float getHeight(){
         return enemyRect.height;
     }
-    public int getMaxHP(){
-        return maxHP;
-    }
     public int getHealth() {
         return health;
+    }
+    public int getMaxHp(){
+        return maxHp;
     }
     public boolean isAlive(){
         return (health>0);
@@ -59,4 +59,6 @@ public class Enemy {
     public void setY(float newY){
         enemyRect.y = newY;
     }
+    public void update(float delta) {}
+
 }
