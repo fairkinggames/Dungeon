@@ -161,7 +161,8 @@ public class GameScreen implements Screen {
         if (Gdx.input.isKeyPressed(Keys.DOWN))
             player.moveDown(Gdx.graphics.getDeltaTime());
         if (Gdx.input.isKeyPressed(Keys.A)){
-            doDamage();
+
+            player.attackEnemies(enemies);
             currentPlayerStance = playerAttackStance;
         } else {
             currentPlayerStance = playerNormalStance;
@@ -213,20 +214,6 @@ public class GameScreen implements Screen {
         rainMusic.dispose();
         backgroundImage.dispose();
     }
-
-    private void doDamage(){
-        Rectangle attackHitbox = player.getAttackHitbox();
-        for (Enemy enemy : enemies){
-            if(enemy.isAlive() && attackHitbox.overlaps(enemy.getRect())){
-                if (TimeUtils.timeSinceMillis(lastDamageTimePlayer) >= damageIntervalPlayer) {
-                    enemy.takeDamage(20); // Apply damage
-                    lastDamageTimePlayer = TimeUtils.millis(); // Update the damage time
-                }
-            }
-        }
-
-    }
-
     private void checkCollision(){
         for (Obstacle obstacle : obstacles) {
             if (player.getPlayerRect().overlaps(obstacle.getRect())) {

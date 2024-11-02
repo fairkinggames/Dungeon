@@ -4,6 +4,8 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.TimeUtils;
 
 public class Player {
     private int maxHP;
@@ -16,6 +18,11 @@ public class Player {
     private Texture swordRight;
     private Texture swordUp;
     private Texture swordDown;
+
+    private long damageInterval = 1000;
+    private long lastDamageTime = 0;
+    private int damageAmount = 20;
+
 
 
     public Player(float x, float y, float width, float height) {
@@ -112,6 +119,26 @@ public class Player {
                 break;
         }
         return attackHitbox;
+    }
+
+    public void attackEnemies(Array<Enemy> enemies) {
+        Rectangle attackHitbox = getAttackHitbox();
+
+        for (Enemy enemy : enemies) {
+            if (enemy.isAlive() && attackHitbox.overlaps(enemy.getRect())) {
+                if (TimeUtils.timeSinceMillis(lastDamageTime) >= damageInterval) {
+                    enemy.takeDamage(damageAmount);
+                    lastDamageTime = TimeUtils.millis();
+                }
+            }
+        }
+    }
+    public void setDamageAmount(int amount) {
+        this.damageAmount = amount;
+    }
+
+    public void setDamageInterval(long interval) {
+        this.damageInterval = interval;
     }
 
     // Not a perfect method for different types of weapons, will change when implementing other weapons.
