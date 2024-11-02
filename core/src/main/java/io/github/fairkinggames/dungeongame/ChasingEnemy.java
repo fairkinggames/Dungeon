@@ -14,6 +14,7 @@ public class ChasingEnemy extends Enemy{
     public ChasingEnemy(float x, float y, float width, float height, int health, float speed) {
         super(x, y, width, height, health);
         this.speed = speed;
+        setDamageAmount(50);
     }
     public void update(float delta, Player player) {
         if (isKnockedBack) {
