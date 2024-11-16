@@ -42,7 +42,12 @@ public class GameScreen implements Screen {
     Texture explosionImage;
     Player player;
     Array<Enemy> enemies;
-    Array<Enemy> enemies1;
+
+    Array<Enemy> room1Enemies;
+    Array<Obstacle> room1Obstacles;
+
+    Array<Enemy> room2Enemies;
+    Array<Obstacle> room2Obstacles;
 
     // list of rocks and trees to be created. List<GameObject> obstacles;
 
@@ -84,30 +89,23 @@ public class GameScreen implements Screen {
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 1280, 720);
 
+
         // create a Rectangle to logically represent the player
         player = new Player(840, 360, 64, 64);
         enemies = new Array<>();
-        enemies.add(new Enemy(200, 200, 64, 64, 100));
-        enemies.add(new Enemy(400, 400, 64, 64, 100));
-        enemies.add(new ChasingEnemy(500, 500, 64, 64, 50, 80));
+
         obstacles = new Array<>();
 
         bombs = new Array<>();
-
-        surroundWithTrees();
+        initializeRooms();
+        loadRoom(Room.ROOM1);
 
     }
 
     @Override
     public void render(float delta) {
-        if (player.getHealth() <= 0) {  // Check if player's HP is zero
-            game.setScreen(new MainMenuScreen(game));  // Transition to main menu
-            dispose();  // Dispose of resources to avoid memory leaks
-            return;  // Stop further processing in this frame
-        }
 
-        updatePlayer(delta);
-        checkRoomTransition();
+
         // clear the screen with a dark blue color.
         ScreenUtils.clear(Color.BLACK);
         // tell the camera to update its matrices.
@@ -120,22 +118,18 @@ public class GameScreen implements Screen {
         // begin a new batch and draw the bucket and
         // all drops
         game.batch.begin();
+        if (player.getHealth() <= 0) {  // Check if player's HP is zero
+            game.setScreen(new MainMenuScreen(game));  // Transition to main menu
+            dispose();  // Dispose of resources to avoid memory leaks
+            return;  // Stop further processing in this frame
+        }
+        surroundWithTrees();
 
-        if (currentRoom == Room.ROOM1) {
-            game.batch.draw(backgroundImage, 0, 0, 1280, 720);
-            renderRoom1Objects();
+        updatePlayer(delta);
+        checkRoomTransition();
 
-            for (Enemy enemy : enemies) {
-                enemy.render(game.batch);
-            }
-
-            obstacles = new Array<>();
-            obstacles.add(new Tree(100, 100, 64, 64));  // Tree
-            obstacles.add(new Rock(400, 200, 64, 64));  // Rock
-        } else if (currentRoom == Room.ROOM2) {
-            ScreenUtils.clear(Color.BLACK);
-            game.batch.draw(backgroundImage, 0, 0, 1280, 720);
-            renderRoom2Objects();
+        for (Enemy enemy : enemies) {
+            enemy.render(game.batch);
         }
 
         game.font.draw(game.batch, "Your HP: " + player.getHealth(), 0, 480);
@@ -149,27 +143,54 @@ public class GameScreen implements Screen {
             }
         }
 
-        for (Enemy enemy : enemies) {
-            enemy.render(game.batch);
-        }
+
         checkBomb();
-
-        game.batch.end();
-
         drawHPBar();
         drawEnemyHPBar();
 
         checkDamage();
         checkCollision();
+        game.batch.end();
 
 
-        // make sure the bucket stays within the screen bounds
+        // make sure the player stays within the screen bounds
         if (player.getX() < 0)
             player.setX(0);
         if (player.getX() > 1280 - 64)
             player.setX(1280 - 64);
-
     }
+    private void initializeRooms() {
+
+        room1Enemies = new Array<>();
+        room1Enemies.add(new Enemy(200, 200, 64, 64, 100));
+        room1Enemies.add(new Enemy(400, 400, 64, 64, 100));
+        room1Enemies.add(new ChasingEnemy(500, 500, 64, 64, 50, 80));
+
+        room1Obstacles = new Array<>();
+        room1Obstacles.add(new Tree(100, 100, 64, 64));
+        room1Obstacles.add(new Rock(400, 200, 64, 64));
+
+
+        room2Enemies = new Array<>();
+        room2Enemies.add(new Enemy(300, 200, 64, 64, 100));
+        room2Enemies.add(new Enemy(500, 400, 64, 64, 100));
+        room2Enemies.add(new ChasingEnemy(600, 500, 64, 64, 50, 80));
+
+        room2Obstacles = new Array<>();
+        room2Obstacles.add(new Tree(150, 150, 64, 64));
+        room2Obstacles.add(new Rock(450, 250, 64, 64));
+    }
+    private void loadRoom(Room room) {
+        if (room == Room.ROOM1) {
+            enemies = room1Enemies;
+            obstacles = room1Obstacles;
+        } else if (room == Room.ROOM2) {
+            enemies = room2Enemies;
+            obstacles = room2Obstacles;
+        }
+    }
+
+
 
     private void renderRoom1Objects() {
         // Draw obstacles, enemies, etc., specific to Room 1
@@ -227,9 +248,18 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
+        bombs.clear();       // Clear bombs placed in the previous room
+        enemies.clear();     // Clear enemies from the previous room
+        obstacles.clear();
         playerNormalStance.dispose();
+        playerAttackStance.dispose();
+        treeImage.dispose();
+        rockImage.dispose();
+        bombImage.dispose();
+        explosionImage.dispose();
         rainMusic.dispose();
         backgroundImage.dispose();
+        shapeRenderer.dispose();
     }
     private void checkCollision(){
         for (Obstacle obstacle : obstacles) {
@@ -384,10 +414,12 @@ public class GameScreen implements Screen {
         if (currentRoom == Room.ROOM1 && player.getX() > 1200) {
             // Move to Room 2
             currentRoom = Room.ROOM2;
+            loadRoom(currentRoom);
             player.setPosition(81, player.getY());  // Wrap player to the left side of Room 2
         } else if (currentRoom == Room.ROOM2 && player.getX() < 80) {
             // Move back to Room 1
             currentRoom = Room.ROOM1;
+            loadRoom(currentRoom);
             player.setPosition(1199, player.getY());  // Wrap player to the right side of Room 1
         }
     }
