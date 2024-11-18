@@ -20,12 +20,7 @@ import com.badlogic.gdx.utils.TimeUtils;
 
 public class GameScreen implements Screen {
     final Dungeon game;
-    private enum Room {
-        ROOM1, ROOM2
-    }
 
-    private Room currentRoom = Room.ROOM1;
-    private final int ROOM_WIDTH = 1280;
     // All these below to be removed
     Music rainMusic;
     OrthographicCamera camera;
@@ -42,7 +37,6 @@ public class GameScreen implements Screen {
     Texture explosionImage;
     Player player;
     Array<Enemy> enemies;
-    Array<Enemy> enemies1;
 
     // list of rocks and trees to be created. List<GameObject> obstacles;
 
@@ -86,11 +80,15 @@ public class GameScreen implements Screen {
 
         // create a Rectangle to logically represent the player
         player = new Player(840, 360, 64, 64);
+
         enemies = new Array<>();
         enemies.add(new Enemy(200, 200, 64, 64, 100));
         enemies.add(new Enemy(400, 400, 64, 64, 100));
         enemies.add(new ChasingEnemy(500, 500, 64, 64, 50, 80));
+
         obstacles = new Array<>();
+        obstacles.add(new Tree(100, 100, 64, 64));  // Tree
+        obstacles.add(new Rock(400, 200, 64, 64));  // Rock
 
         bombs = new Array<>();
 
@@ -105,9 +103,14 @@ public class GameScreen implements Screen {
             dispose();  // Dispose of resources to avoid memory leaks
             return;  // Stop further processing in this frame
         }
-
-        updatePlayer(delta);
-        checkRoomTransition();
+        for (Enemy enemy : enemies) {
+            //TODO im calling a lot of isAlive() at the moment, unsure if there is a better way to handle these in enemy class.
+            if (enemy.isAlive() && enemy instanceof ChasingEnemy) {
+                ((ChasingEnemy) enemy).update(delta, player);  // Pass player to chasing enemy
+            } else {
+                enemy.update(delta);  // Stationary enemy with no movement
+            }
+        }
         // clear the screen with a dark blue color.
         ScreenUtils.clear(Color.BLACK);
         // tell the camera to update its matrices.
@@ -116,28 +119,13 @@ public class GameScreen implements Screen {
         // coordinate system specified by the camera.
         game.batch.setProjectionMatrix(camera.combined);
         // Get the current time in seconds
-
+        float currentTime = TimeUtils.nanoTime() / 1e9f;
         // begin a new batch and draw the bucket and
         // all drops
         game.batch.begin();
 
-        if (currentRoom == Room.ROOM1) {
-            game.batch.draw(backgroundImage, 0, 0, 1280, 720);
-            renderRoom1Objects();
 
-            for (Enemy enemy : enemies) {
-                enemy.render(game.batch);
-            }
-
-            obstacles = new Array<>();
-            obstacles.add(new Tree(100, 100, 64, 64));  // Tree
-            obstacles.add(new Rock(400, 200, 64, 64));  // Rock
-        } else if (currentRoom == Room.ROOM2) {
-            ScreenUtils.clear(Color.BLACK);
-            game.batch.draw(backgroundImage, 0, 0, 1280, 720);
-            renderRoom2Objects();
-        }
-
+        game.batch.draw(backgroundImage, 0, 0, 1280, 720);
         game.font.draw(game.batch, "Your HP: " + player.getHealth(), 0, 480);
         player.render(game.batch, currentPlayerStance);
 
@@ -159,27 +147,7 @@ public class GameScreen implements Screen {
         drawHPBar();
         drawEnemyHPBar();
 
-        checkDamage();
-        checkCollision();
 
-
-        // make sure the bucket stays within the screen bounds
-        if (player.getX() < 0)
-            player.setX(0);
-        if (player.getX() > 1280 - 64)
-            player.setX(1280 - 64);
-
-    }
-
-    private void renderRoom1Objects() {
-        // Draw obstacles, enemies, etc., specific to Room 1
-    }
-
-    private void renderRoom2Objects() {
-        // Draw obstacles, enemies, etc., specific to Room 2
-    }
-    private void updatePlayer(float delta) {
-        float currentTime = TimeUtils.nanoTime() / 1e9f;
         if (Gdx.input.isKeyPressed(Keys.LEFT))
             player.moveLeft(Gdx.graphics.getDeltaTime());
         if (Gdx.input.isKeyPressed(Keys.RIGHT))
@@ -199,6 +167,17 @@ public class GameScreen implements Screen {
             bombs.add(new Bomb(player.getX(), player.getY(), 64, 64));
             lastBombDropTime = currentTime;
         }
+
+        checkDamage();
+        checkCollision();
+
+
+        // make sure the bucket stays within the screen bounds
+        if (player.getX() < 0)
+            player.setX(0);
+        if (player.getX() > 1280 - 64)
+            player.setX(1280 - 64);
+
     }
 
 
@@ -378,18 +357,6 @@ public class GameScreen implements Screen {
 
     private float distance(float x1, float y1, float x2, float y2) {
         return (float) Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
-    }
-
-    private void checkRoomTransition() {
-        if (currentRoom == Room.ROOM1 && player.getX() > 1200) {
-            // Move to Room 2
-            currentRoom = Room.ROOM2;
-            player.setPosition(81, player.getY());  // Wrap player to the left side of Room 2
-        } else if (currentRoom == Room.ROOM2 && player.getX() < 80) {
-            // Move back to Room 1
-            currentRoom = Room.ROOM1;
-            player.setPosition(1199, player.getY());  // Wrap player to the right side of Room 1
-        }
     }
 
 }
