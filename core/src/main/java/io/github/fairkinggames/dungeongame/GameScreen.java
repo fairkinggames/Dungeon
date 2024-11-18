@@ -42,6 +42,10 @@ public class GameScreen implements Screen {
 
     Array<Obstacle> obstacles;
 
+    long lastDamageTimeEnemy = 0;
+    long lastDamageTimePlayer = 0;
+    long damageIntervalEnemy = 2000;
+    long damageIntervalPlayer = 1000;
     float lastBombDropTime = 0.0f;  // Time of the last bomb drop
     float cooldownTime = 2f;
     float hpBarWidth = 64;
@@ -220,10 +224,11 @@ public class GameScreen implements Screen {
 
     private void checkDamage(){
         for (Enemy enemy : enemies) {
-            if (enemy.isAlive()) {
-                enemy.attackPlayer(player);
-                if(player.getPlayerRect().overlaps(enemy.getRect())){
-                    movePlayerBack();
+            if (enemy.isAlive() && player.getPlayerRect().overlaps(enemy.getRect())) {
+                movePlayerBack();
+                if (TimeUtils.timeSinceMillis(lastDamageTimeEnemy) >= damageIntervalEnemy) {
+                    player.takeDamage(10); // Player takes 10 damage every 2 seconds
+                    lastDamageTimeEnemy = TimeUtils.millis(); // Update the time when the last damage was taken
                 }
             }
         }
@@ -352,6 +357,33 @@ public class GameScreen implements Screen {
                     bomb.explosionStartTime = TimeUtils.nanoTime();  // Record explosion start time
                 }
             }
+        }
+    }
+    // Helper method to check if the enemy is in the direction the player is facing
+    private boolean isEnemyInFacingDirection(Player player, Enemy enemy) {
+        String direction = player.getFacingDirection();
+        Rectangle playerRect = player.getPlayerRect();
+        Rectangle enemyRect = enemy.getRect();
+
+        switch (direction) {
+            case "LEFT":
+                // Enemy must be to the left of the player
+                return enemyRect.x < playerRect.x;
+
+            case "RIGHT":
+                // Enemy must be to the right of the player
+                return enemyRect.x > playerRect.x;
+
+            case "UP":
+                // Enemy must be above the player
+                return enemyRect.y > playerRect.y;
+
+            case "DOWN":
+                // Enemy must be below the player
+                return enemyRect.y < playerRect.y;
+
+            default:
+                return false;  // If direction is unknown, return false
         }
     }
 
