@@ -97,6 +97,8 @@ public class GameScreen implements Screen {
         obstacles = new Array<>();
 
         bombs = new Array<>();
+        surroundWithTrees();
+
         initializeRooms();
         loadRoom(Room.ROOM1);
 
@@ -123,7 +125,7 @@ public class GameScreen implements Screen {
             dispose();  // Dispose of resources to avoid memory leaks
             return;  // Stop further processing in this frame
         }
-        surroundWithTrees();
+        game.batch.draw(backgroundImage, 0, 0, 1280, 720);
 
         updatePlayer(delta);
         checkRoomTransition();
