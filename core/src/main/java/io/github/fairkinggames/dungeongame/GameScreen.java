@@ -42,6 +42,7 @@ public class GameScreen implements Screen {
     Texture explosionImage;
     Player player;
     Array<Enemy> enemies;
+    Array<Obstacle> obstacles;
 
     Array<Enemy> room1Enemies;
     Array<Obstacle> room1Obstacles;
@@ -51,7 +52,7 @@ public class GameScreen implements Screen {
 
     // list of rocks and trees to be created. List<GameObject> obstacles;
 
-    Array<Obstacle> obstacles;
+
 
     float lastBombDropTime = 0.0f;  // Time of the last bomb drop
     float cooldownTime = 2f;
@@ -93,11 +94,9 @@ public class GameScreen implements Screen {
         // create a Rectangle to logically represent the player
         player = new Player(840, 360, 64, 64);
         enemies = new Array<>();
-
         obstacles = new Array<>();
 
         bombs = new Array<>();
-        surroundWithTrees();
 
         initializeRooms();
         loadRoom(Room.ROOM1);
@@ -107,6 +106,11 @@ public class GameScreen implements Screen {
     @Override
     public void render(float delta) {
 
+        if (player.getHealth() <= 0) {  // Check if player's HP is zero
+            game.setScreen(new MainMenuScreen(game));  // Transition to main menu
+            dispose();  // Dispose of resources to avoid memory leaks
+            return;  // Stop further processing in this frame
+        }
 
         // clear the screen with a dark blue color.
         ScreenUtils.clear(Color.BLACK);
@@ -120,23 +124,7 @@ public class GameScreen implements Screen {
         // begin a new batch and draw the bucket and
         // all drops
         game.batch.begin();
-        if (player.getHealth() <= 0) {  // Check if player's HP is zero
-            game.setScreen(new MainMenuScreen(game));  // Transition to main menu
-            dispose();  // Dispose of resources to avoid memory leaks
-            return;  // Stop further processing in this frame
-        }
         game.batch.draw(backgroundImage, 0, 0, 1280, 720);
-
-        updatePlayer(delta);
-        checkRoomTransition();
-
-        for (Enemy enemy : enemies) {
-            enemy.render(game.batch);
-        }
-
-        game.font.draw(game.batch, "Your HP: " + player.getHealth(), 0, 480);
-        player.render(game.batch, currentPlayerStance);
-
         for (Obstacle obstacle : obstacles) {
             if (obstacle instanceof Tree) {
                 obstacle.render(game.batch, treeImage);
@@ -145,14 +133,28 @@ public class GameScreen implements Screen {
             }
         }
 
-
+        for (Enemy enemy : enemies) {
+            if (enemy.isAlive() && enemy instanceof ChasingEnemy) {
+                ((ChasingEnemy) enemy).update(delta, player);  // Pass player to chasing enemy
+            } else {
+                enemy.update(delta);  // Stationary enemy with no movement
+            }
+            enemy.render(game.batch);
+        }
+        game.font.draw(game.batch, "Your HP: " + player.getHealth(), 0, 480);
+        player.render(game.batch, currentPlayerStance);
         checkBomb();
+
+        game.batch.end();
+
+        //Careful with these lines below. They must stay after batch.end. Caused issue when put these game logic and draw HP inside.
         drawHPBar();
         drawEnemyHPBar();
 
         checkDamage();
         checkCollision();
-        game.batch.end();
+        updatePlayer(delta);
+        checkRoomTransition();
 
 
         // make sure the player stays within the screen bounds
@@ -171,7 +173,6 @@ public class GameScreen implements Screen {
         room1Obstacles = new Array<>();
         room1Obstacles.add(new Tree(100, 100, 64, 64));
         room1Obstacles.add(new Rock(400, 200, 64, 64));
-
 
         room2Enemies = new Array<>();
         room2Enemies.add(new Enemy(300, 200, 64, 64, 100));
