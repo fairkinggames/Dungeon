@@ -14,6 +14,7 @@ public class ChasingEnemy extends Enemy{
     public ChasingEnemy(float x, float y, float width, float height, int health, float speed) {
         super(x, y, width, height, health);
         this.speed = speed;
+        setDamageAmount(10);
     }
     public void update(float delta, Player player) {
         if (isKnockedBack) {
@@ -41,8 +42,8 @@ public class ChasingEnemy extends Enemy{
             knockbackStartTime = TimeUtils.nanoTime();
 
             // Apply knockback by moving the enemy away from the player
-            enemyRect.x -= (directionX / distance) * 2;  // Adjust knockback distance as needed
-            enemyRect.y -= (directionY / distance) * 2;
+            enemyRect.x -= (directionX / distance) * 5;  // Adjust knockback distance as needed
+            enemyRect.y -= (directionY / distance) * 5;
         }
     }
 }
