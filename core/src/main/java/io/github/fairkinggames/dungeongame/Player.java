@@ -140,10 +140,6 @@ public class Player {
     public void setDamageInterval(long interval) {
         this.damageInterval = interval;
     }
-    public void setPosition(float x, float y) {
-        this.playerRect.x = x;
-        this.playerRect.y = y;
-    }
 
     // Not a perfect method for different types of weapons, will change when implementing other weapons.
     private void drawSword(SpriteBatch batch) {
