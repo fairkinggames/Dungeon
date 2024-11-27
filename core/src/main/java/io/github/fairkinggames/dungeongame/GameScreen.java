@@ -426,13 +426,22 @@ public class GameScreen implements Screen {
 
     private void checkRoomTransition() {
         if (currentRoom == Room.ROOM1 && player.getX() > 1200) {
-            initializeRooms();
+            for (Enemy enemy : enemies) {
+                if (enemy.isAlive()) {
+                    initializeRooms();
+                }
+            }
+
             // Move to Room 2
             currentRoom = Room.ROOM2;
             loadRoom(currentRoom);
             player.setPosition(81, player.getY());  // Wrap player to the left side of Room 2
         } else if (currentRoom == Room.ROOM2 && player.getX() < 80) {
-            initializeRooms();
+            for (Enemy enemy : enemies) {
+                if (enemy.isAlive()) {
+                    initializeRooms();
+                }
+            }
             // Move back to Room 1
             currentRoom = Room.ROOM1;
             loadRoom(currentRoom);
