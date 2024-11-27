@@ -17,6 +17,7 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.TimeUtils;
+import com.badlogic.gdx.math.Intersector;
 
 public class GameScreen implements Screen {
     final Dungeon game;
@@ -276,38 +277,36 @@ public class GameScreen implements Screen {
             if (enemy.isAlive()) {
                 enemy.attackPlayer(player);
                 if(player.getPlayerRect().overlaps(enemy.getRect())){
-                    //TODO
+                    movePlayerBack(player, enemy);
                 }
             }
         }
     }
 
-    private void movePlayerBack(Player player, Obstacle obstacle) {
-        Rectangle playerRect = player.getPlayerRect();
-        Rectangle obstacleRect = obstacle.getRect();
+    private void movePlayerBack(GameObject movingObject, GameObject staticObject) {
+        Rectangle movingRect = movingObject.getRect();
+        Rectangle staticRect = staticObject.getRect();
 
-        float overlapX = Math.min(playerRect.x + playerRect.width, obstacleRect.x + obstacleRect.width) -
-            Math.max(playerRect.x, obstacleRect.x);
+        float overlapX = Math.min(movingRect.x + movingRect.width, staticRect.x + staticRect.width)
+            - Math.max(movingRect.x, staticRect.x);
+        float overlapY = Math.min(movingRect.y + movingRect.height, staticRect.y + staticRect.height)
+            - Math.max(movingRect.y, staticRect.y);
 
-        float overlapY = Math.min(playerRect.y + playerRect.height, obstacleRect.y + obstacleRect.height) -
-            Math.max(playerRect.y, obstacleRect.y);
-
-        // Push player back based on the smaller overlap (X or Y)
+        // Determine the axis with the smallest overlap
         if (overlapX < overlapY) {
-            // Horizontal push
-            if (playerRect.x < obstacleRect.x) {
-                player.setX(player.getX() - overlapX); // Push left
+            if (movingRect.x < staticRect.x) {
+                movingObject.setX(movingObject.getX() - overlapX); // Push left
             } else {
-                player.setX(player.getX() + overlapX); // Push right
+                movingObject.setX(movingObject.getX() + overlapX); // Push right
             }
         } else {
-            // Vertical push
-            if (playerRect.y < obstacleRect.y) {
-                player.setY(player.getY() - overlapY); // Push down
+            if (movingRect.y < staticRect.y) {
+                movingObject.setY(movingObject.getY() - overlapY); // Push down
             } else {
-                player.setY(player.getY() + overlapY); // Push up
+                movingObject.setY(movingObject.getY() + overlapY); // Push up
             }
         }
+
     }
 
     private void drawHPBar() {

@@ -7,7 +7,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
 
-public class Player {
+public class Player extends GameObject{
     private int maxHP;
     private int health;
     private String facingDirection = "DOWN";
@@ -26,6 +26,7 @@ public class Player {
 
 
     public Player(float x, float y, float width, float height) {
+        super(x, y, width, height);
         maxHP = 100;
         health = 100;
         playerRect = new Rectangle(x, y, width, height);
@@ -60,6 +61,12 @@ public class Player {
     public float getHeight(){
         return playerRect.height;
     }
+
+    @Override
+    public Rectangle getRect() {
+        return playerRect;
+    }
+
     public int getMaxHP(){
         return maxHP;
     }

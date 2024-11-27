@@ -7,7 +7,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.TimeUtils;
 
-public class Enemy {
+public class Enemy extends GameObject{
     private int maxHp;
     protected int health;
     protected Rectangle enemyRect;
@@ -20,6 +20,7 @@ public class Enemy {
     private int damageAmount = 10;
 
     public Enemy(float x, float y, float width, float height, int hp) {
+        super(x,y,width,height);
         this.maxHp = hp;
         this.health = hp;
         enemyRect = new Rectangle(x, y, width, height);
