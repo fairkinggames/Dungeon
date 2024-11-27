@@ -144,15 +144,14 @@ public class GameScreen implements Screen {
         game.font.draw(game.batch, "Your HP: " + player.getHealth(), 0, 480);
         player.render(game.batch, currentPlayerStance);
         checkBomb();
-
         game.batch.end();
 
         //Careful with these lines below. They must stay after batch.end. Caused issue when put these game logic and draw HP inside.
         drawHPBar();
         drawEnemyHPBar();
 
-        checkDamage();
         checkCollision();
+        checkDamage();
         updatePlayer(delta);
         checkRoomTransition();
 
@@ -267,7 +266,7 @@ public class GameScreen implements Screen {
     private void checkCollision(){
         for (Obstacle obstacle : obstacles) {
             if (player.getPlayerRect().overlaps(obstacle.getRect())) {
-                movePlayerBack();
+                movePlayerBack(player, obstacle);
             }
         }
     }
@@ -277,24 +276,37 @@ public class GameScreen implements Screen {
             if (enemy.isAlive()) {
                 enemy.attackPlayer(player);
                 if(player.getPlayerRect().overlaps(enemy.getRect())){
-                    movePlayerBack();
+                    //TODO
                 }
             }
         }
     }
 
-    private void movePlayerBack() {
-        if (Gdx.input.isKeyPressed(Keys.LEFT)) {
-            player.setX(player.getX() + 200 * Gdx.graphics.getDeltaTime());
-        }
-        if (Gdx.input.isKeyPressed(Keys.RIGHT)) {
-            player.setX(player.getX() - 200 * Gdx.graphics.getDeltaTime());
-        }
-        if (Gdx.input.isKeyPressed(Keys.UP)) {
-            player.setY(player.getY() - 200 * Gdx.graphics.getDeltaTime());
-        }
-        if (Gdx.input.isKeyPressed(Keys.DOWN)) {
-            player.setY(player.getY() + 200 * Gdx.graphics.getDeltaTime());
+    private void movePlayerBack(Player player, Obstacle obstacle) {
+        Rectangle playerRect = player.getPlayerRect();
+        Rectangle obstacleRect = obstacle.getRect();
+
+        float overlapX = Math.min(playerRect.x + playerRect.width, obstacleRect.x + obstacleRect.width) -
+            Math.max(playerRect.x, obstacleRect.x);
+
+        float overlapY = Math.min(playerRect.y + playerRect.height, obstacleRect.y + obstacleRect.height) -
+            Math.max(playerRect.y, obstacleRect.y);
+
+        // Push player back based on the smaller overlap (X or Y)
+        if (overlapX < overlapY) {
+            // Horizontal push
+            if (playerRect.x < obstacleRect.x) {
+                player.setX(player.getX() - overlapX); // Push left
+            } else {
+                player.setX(player.getX() + overlapX); // Push right
+            }
+        } else {
+            // Vertical push
+            if (playerRect.y < obstacleRect.y) {
+                player.setY(player.getY() - overlapY); // Push down
+            } else {
+                player.setY(player.getY() + overlapY); // Push up
+            }
         }
     }
 
@@ -415,11 +427,13 @@ public class GameScreen implements Screen {
 
     private void checkRoomTransition() {
         if (currentRoom == Room.ROOM1 && player.getX() > 1200) {
+            initializeRooms();
             // Move to Room 2
             currentRoom = Room.ROOM2;
             loadRoom(currentRoom);
             player.setPosition(81, player.getY());  // Wrap player to the left side of Room 2
         } else if (currentRoom == Room.ROOM2 && player.getX() < 80) {
+            initializeRooms();
             // Move back to Room 1
             currentRoom = Room.ROOM1;
             loadRoom(currentRoom);
