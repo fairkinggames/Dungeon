@@ -69,6 +69,10 @@ public class Enemy extends GameObject{
     }
     public void update(float delta) {}
 
+    public Enemy copy() {
+        return new Enemy(x, y, width, height, health);
+    }
+
     public boolean isPlayerInRange(Player player) {
         float distance = Vector2.dst(player.getX(), player.getY(), enemyRect.x, enemyRect.y);
         return distance <= attackRange;

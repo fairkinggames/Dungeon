@@ -4,13 +4,20 @@ import com.badlogic.gdx.utils.Array;
 
 public class Room {
     private Array<Obstacle> obstacles;
+    private Array<Obstacle> OGObstacles;
     private Array<Enemy> enemies;
+    private final Array<Enemy> OGEnemies;
     private boolean isCleared;
 
     public Room(Array<Obstacle> obstacles, Array<Enemy> enemies) {
         this.obstacles = obstacles;
         this.enemies = enemies;
         this.isCleared = false;
+        this.OGEnemies = new Array<>();
+        for (Enemy enemy : enemies) {
+            Enemy copiedEnemy = enemy.copy();
+            this.OGEnemies.add(copiedEnemy); // Add to original enemies
+        }
     }
 
     public Array<Obstacle> getObstacles() {
@@ -20,6 +27,10 @@ public class Room {
     public Array<Enemy> getEnemies() {
         return enemies;
     }
+    public Array<Enemy> getOGEnemies() {
+        return OGEnemies;
+    }
+
 
     public boolean isCleared() {
         return isCleared;
@@ -39,5 +50,9 @@ public class Room {
                 }
             }
         }
+    }
+
+    public void setEnemies(Array<Enemy> newEnemies) {
+        this.enemies = newEnemies;
     }
 }
