@@ -16,6 +16,11 @@ public class ChasingEnemy extends Enemy{
         this.speed = speed;
         setDamageAmount(10);
     }
+    @Override
+    public ChasingEnemy copy() {
+        return new ChasingEnemy(x, y, width, height, health, speed);
+    }
+
     public void update(float delta, Player player) {
         if (isKnockedBack) {
             // Check if knockback time has passed

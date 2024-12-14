@@ -20,6 +20,10 @@ public class Obstacle extends GameObject {
     public Rectangle getRect() {
         return ObstacleRect;
     }
+
+    public Obstacle copy(){
+        return new Obstacle(x, y, width, height);
+    }
 }
 
 

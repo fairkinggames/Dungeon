@@ -3,29 +3,37 @@ package io.github.fairkinggames.dungeongame;
 import com.badlogic.gdx.utils.Array;
 
 public class Room {
-    private Array<Obstacle> obstacles;
+    private Array<Obstacle> RoomObstacles;
     private Array<Obstacle> OGObstacles;
-    private Array<Enemy> enemies;
-    private final Array<Enemy> OGEnemies;
+    private Array<Enemy> RoomEnemies;
+    private Array<Enemy> OGEnemies;
     private boolean isCleared;
 
     public Room(Array<Obstacle> obstacles, Array<Enemy> enemies) {
-        this.obstacles = obstacles;
-        this.enemies = enemies;
-        this.isCleared = false;
+        this.RoomObstacles = new Array<>();
+        this.RoomEnemies = new Array<>();
         this.OGEnemies = new Array<>();
+        this.OGObstacles = new Array<>();
+
         for (Enemy enemy : enemies) {
-            Enemy copiedEnemy = enemy.copy();
-            this.OGEnemies.add(copiedEnemy); // Add to original enemies
+            this.OGEnemies.add(enemy.copy());
+            this.RoomEnemies.add(enemy.copy());
         }
+
+        for (Obstacle obstacle : obstacles) {
+            this.OGObstacles.add(obstacle);
+            this.RoomObstacles.add(obstacle);
+        }
+
+        this.isCleared = false;
     }
 
     public Array<Obstacle> getObstacles() {
-        return obstacles;
+        return RoomObstacles;
     }
 
     public Array<Enemy> getEnemies() {
-        return enemies;
+        return RoomEnemies;
     }
     public Array<Enemy> getOGEnemies() {
         return OGEnemies;
@@ -43,7 +51,7 @@ public class Room {
     public void checkRoomCleared() {
         if (!isCleared) {
             isCleared = true; // Assume the room is cleared
-            for (Enemy enemy : enemies) {
+            for (Enemy enemy : RoomEnemies) {
                 if (enemy.isAlive()) {
                     isCleared = false; // If any enemy is still alive, the room is not cleared
                     break; // No need to check further
@@ -53,6 +61,19 @@ public class Room {
     }
 
     public void setEnemies(Array<Enemy> newEnemies) {
-        this.enemies = newEnemies;
+        this.RoomEnemies = newEnemies;
+    }
+
+    public void resetRoom() {
+        // Clear current enemies and obstacles
+        this.RoomEnemies.clear();
+
+        // Deep copy from OGEnemies and OGObstacles
+        for (Enemy originalEnemy : OGEnemies) {
+            this.RoomEnemies.add(originalEnemy.copy());
+        }
+
+
+        this.isCleared = false; // Mark the room as not cleared
     }
 }
