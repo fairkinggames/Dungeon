@@ -1,6 +1,8 @@
 package io.github.fairkinggames.dungeongame;
 
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
@@ -21,11 +23,9 @@ import com.badlogic.gdx.math.Intersector;
 
 public class GameScreen implements Screen {
     final Dungeon game;
-    private enum Room {
-        ROOM1, ROOM2
-    }
 
-    private Room currentRoom = Room.ROOM1;
+    private Map<String, Room> rooms;
+    private Room currentRoom;
     private final int ROOM_WIDTH = 1280;
     // All these below to be removed
     Music rainMusic;
@@ -100,7 +100,6 @@ public class GameScreen implements Screen {
         bombs = new Array<>();
 
         initializeRooms();
-        loadRoom(Room.ROOM1);
 
     }
 
@@ -126,7 +125,7 @@ public class GameScreen implements Screen {
         // all drops
         game.batch.begin();
         game.batch.draw(backgroundImage, 0, 0, 1280, 720);
-        for (Obstacle obstacle : obstacles) {
+        for (Obstacle obstacle : currentRoom.getObstacles()) {
             if (obstacle instanceof Tree) {
                 obstacle.render(game.batch, treeImage);
             } else if (obstacle instanceof Rock) {
@@ -134,7 +133,7 @@ public class GameScreen implements Screen {
             }
         }
 
-        for (Enemy enemy : enemies) {
+        for (Enemy enemy : currentRoom.getEnemies()) {
             if (enemy.isAlive() && enemy instanceof ChasingEnemy) {
                 ((ChasingEnemy) enemy).update(delta, player);  // Pass player to chasing enemy
             } else {
@@ -164,6 +163,7 @@ public class GameScreen implements Screen {
             player.setX(1280 - 64);
     }
     private void initializeRooms() {
+        rooms = new HashMap<>();
 
         room1Enemies = new Array<>();
         room1Enemies.add(new Enemy(200, 200, 64, 64, 100));
@@ -174,6 +174,8 @@ public class GameScreen implements Screen {
         room1Obstacles.add(new Tree(100, 100, 64, 64));
         room1Obstacles.add(new Rock(400, 200, 64, 64));
 
+        rooms.put("Room1", new Room(room1Obstacles, room1Enemies));
+
         room2Enemies = new Array<>();
         room2Enemies.add(new Enemy(300, 200, 64, 64, 100));
         room2Enemies.add(new Enemy(500, 400, 64, 64, 100));
@@ -182,26 +184,11 @@ public class GameScreen implements Screen {
         room2Obstacles = new Array<>();
         room2Obstacles.add(new Tree(150, 150, 64, 64));
         room2Obstacles.add(new Rock(450, 250, 64, 64));
-    }
-    private void loadRoom(Room room) {
-        if (room == Room.ROOM1) {
-            enemies = room1Enemies;
-            obstacles = room1Obstacles;
-        } else if (room == Room.ROOM2) {
-            enemies = room2Enemies;
-            obstacles = room2Obstacles;
-        }
+        rooms.put("Room2", new Room(room2Obstacles, room2Enemies));
+
+        currentRoom = rooms.get("Room1");
     }
 
-
-
-    private void renderRoom1Objects() {
-        // Draw obstacles, enemies, etc., specific to Room 1
-    }
-
-    private void renderRoom2Objects() {
-        // Draw obstacles, enemies, etc., specific to Room 2
-    }
     private void updatePlayer(float delta) {
         float currentTime = TimeUtils.nanoTime() / 1e9f;
         if (Gdx.input.isKeyPressed(Keys.LEFT))
@@ -214,7 +201,7 @@ public class GameScreen implements Screen {
             player.moveDown(Gdx.graphics.getDeltaTime());
         if (Gdx.input.isKeyPressed(Keys.A)){
 
-            player.attackEnemies(enemies);
+            player.attackEnemies(currentRoom.getEnemies());
             currentPlayerStance = playerAttackStance;
         } else {
             currentPlayerStance = playerNormalStance;
@@ -265,7 +252,7 @@ public class GameScreen implements Screen {
         shapeRenderer.dispose();
     }
     private void checkCollision(){
-        for (Obstacle obstacle : obstacles) {
+        for (Obstacle obstacle : currentRoom.getObstacles()) {
             if (player.getPlayerRect().overlaps(obstacle.getRect())) {
                 movePlayerBack(player, obstacle);
             }
@@ -273,7 +260,7 @@ public class GameScreen implements Screen {
     }
 
     private void checkDamage(){
-        for (Enemy enemy : enemies) {
+        for (Enemy enemy : currentRoom.getEnemies()) {
             if (enemy.isAlive()) {
                 enemy.attackPlayer(player);
                 if(player.getPlayerRect().overlaps(enemy.getRect())){
@@ -328,7 +315,7 @@ public class GameScreen implements Screen {
     }
 
     private void drawEnemyHPBar() {
-        for (Enemy enemy : enemies) {
+        for (Enemy enemy : currentRoom.getEnemies()) {
             // Calculate the width of the HP bar based on the player's current HP
             float currentHPWidth = (enemy.getHealth() / (float)enemy.getMaxHp()) * hpBarWidth;
             // Set the color and draw the HP bar above the player
@@ -383,7 +370,7 @@ public class GameScreen implements Screen {
                     }
 
                     // Check distance to enemies
-                    for (Enemy enemy : enemies) {
+                    for (Enemy enemy : currentRoom.getEnemies()) {
                         if (enemy.isAlive()){
                             float enemyDistance = distance(enemy.getX() + enemy.getWidth() / 2, enemy.getY() + enemy.getHeight() / 2,
                                 bomb.getRect().x + bomb.getRect().width / 2, bomb.getRect().y + bomb.getRect().height / 2);
@@ -424,30 +411,54 @@ public class GameScreen implements Screen {
         return (float) Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
     }
 
-    private void checkRoomTransition() {
-        if (currentRoom == Room.ROOM1 && player.getX() > 1200) {
-            for (Enemy enemy : enemies) {
-                if (enemy.isAlive()) {
-                    initializeRooms();
-                }
-            }
 
+    private void checkRoomTransition() {
+        if (currentRoom == rooms.get("Room1") && player.getX() > 1200) {
+            currentRoom.checkRoomCleared();
             // Move to Room 2
-            currentRoom = Room.ROOM2;
-            loadRoom(currentRoom);
-            player.setPosition(81, player.getY());  // Wrap player to the left side of Room 2
-        } else if (currentRoom == Room.ROOM2 && player.getX() < 80) {
-            for (Enemy enemy : enemies) {
-                if (enemy.isAlive()) {
-                    initializeRooms();
-                }
-            }
+            transitionToRoom("Room1", "Room2", 81, player.getY());
+        } else if (currentRoom == rooms.get("Room2") && player.getX() < 80) {
             // Move back to Room 1
-            currentRoom = Room.ROOM1;
-            loadRoom(currentRoom);
-            player.setPosition(1199, player.getY());  // Wrap player to the right side of Room 1
+            transitionToRoom("Room2", "Room1", 1199, player.getY());
         }
     }
+
+    private void transitionToRoom(String lastRoom, String newRoom, float playerX, float playerY) {
+        Room prevRoom = rooms.get(lastRoom);
+        Room targetRoom = rooms.get(newRoom);
+
+
+        System.out.println(prevRoom.isCleared());
+
+        // Check if the target room is not cleared
+        if (!prevRoom.isCleared()) {
+            prevRoom.resetRoom();  // Reset the room if not cleared
+        }
+
+        currentRoom = targetRoom;  // Switch to the new room
+        player.setPosition(playerX, playerY);  // Update player position
+    }
+
+
+
+    /*private void resetRoom(Room room) {
+        //Array<Obstacle> originalObstacles = new Array<>(room.getObstacles());
+        //Array<Enemy> originalEnemies = new Array<>(room.getOGEnemies());
+
+        // Reinitialize enemies and obstacles
+        //Array<Obstacle> newObstacles = new Array<>();
+        /*for (Obstacle obstacle : originalObstacles) {
+            newObstacles.add(obstacle.copy());  // Make sure your Obstacle class has a `copy` method
+        }*/
+        /*Array<Enemy> newEnemies = new Array<>();
+        for (Enemy enemy : originalEnemies) {
+            newEnemies.add(enemy.copy());  // Make sure your Enemy class has a `copy` method
+        }        //room.setObstacles(newObstacles); // Set new obstacles in the room
+        room = new Room(room.getObstacles(), room.getOGEnemies()); // Set new enemies in the room
+        room.setCleared(false); // Mark room as not cleared
+    } */
+
+
 
 
 }
