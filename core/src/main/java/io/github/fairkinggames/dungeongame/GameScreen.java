@@ -3,6 +3,7 @@ package io.github.fairkinggames.dungeongame;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Random;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
@@ -25,6 +26,8 @@ public class GameScreen implements Screen {
     final Dungeon game;
 
     private Map<String, Room> rooms;
+
+    private Room startingRoom; // new
     private Room currentRoom;
     private final int ROOM_WIDTH = 1280;
     // All these below to be removed
@@ -99,7 +102,8 @@ public class GameScreen implements Screen {
 
         bombs = new Array<>();
 
-        initializeRooms();
+        //initializeRooms();
+        generateDungeon(2);
 
     }
 
@@ -161,6 +165,94 @@ public class GameScreen implements Screen {
             player.setX(0);
         if (player.getX() > 1280 - 64)
             player.setX(1280 - 64);
+    }
+    private void generateDungeon(int numberOfRooms) {
+        rooms = new HashMap<>();
+        Random random = new Random();
+
+        // Start with the first room
+        currentRoom = createRandomRoom("Room1");
+        rooms.put("Room1", currentRoom);
+        startingRoom = currentRoom;
+
+        // Directions: 0 = North, 1 = South, 2 = East, 3 = West
+        String[] directions = {"North", "South", "East", "West"};
+        int createdRooms = 1;
+
+        while (createdRooms < numberOfRooms) {
+            String newRoomId = "Room" + (createdRooms + 1);
+            int directionIndex = random.nextInt(4);
+            String direction = directions[directionIndex];
+
+            // Get or create a neighboring room
+            Room nextRoom = createRandomRoom(newRoomId);
+            switch (direction) {
+                case "North":
+                    if (currentRoom.getNorth() == null) {
+                        currentRoom.setNorth(nextRoom);
+                        nextRoom.setSouth(currentRoom);
+                        rooms.put(newRoomId, nextRoom);
+                        currentRoom = nextRoom;
+                        createdRooms++;
+                    }
+                    break;
+                case "South":
+                    if (currentRoom.getSouth() == null) {
+                        currentRoom.setSouth(nextRoom);
+                        nextRoom.setNorth(currentRoom);
+                        rooms.put(newRoomId, nextRoom);
+                        currentRoom = nextRoom;
+                        createdRooms++;
+                    }
+                    break;
+                case "East":
+                    if (currentRoom.getEast() == null) {
+                        currentRoom.setEast(nextRoom);
+                        nextRoom.setWest(currentRoom);
+                        rooms.put(newRoomId, nextRoom);
+                        currentRoom = nextRoom;
+                        createdRooms++;
+                    }
+                    break;
+                case "West":
+                    if (currentRoom.getWest() == null) {
+                        currentRoom.setWest(nextRoom);
+                        nextRoom.setEast(currentRoom);
+                        rooms.put(newRoomId, nextRoom);
+                        currentRoom = nextRoom;
+                        createdRooms++;
+                    }
+                    break;
+            }
+        }
+    }
+
+    private Room createRandomRoom(String roomId) {
+        Array<Obstacle> randomObstacles = generateRandomObstacles();
+        Array<Enemy> randomEnemies = generateRandomEnemies();
+        return new Room(randomObstacles, randomEnemies);
+    }
+    private Array<Obstacle> generateRandomObstacles() {
+        Array<Obstacle> obstacles = new Array<>();
+        Random random = new Random();
+        int obstacleCount = random.nextInt(5) + 1; // 1 to 5 obstacles
+        for (int i = 0; i < obstacleCount; i++) {
+            if (random.nextBoolean()) {
+                obstacles.add(new Tree(random.nextInt(1200), random.nextInt(600),64, 64));
+            } else {
+                obstacles.add(new Rock(random.nextInt(1200), random.nextInt(600), 64, 64));
+            }
+        }
+        return obstacles;
+    }
+    private Array<Enemy> generateRandomEnemies() {
+        Array<Enemy> enemies = new Array<>();
+        Random random = new Random();
+        int enemyCount = random.nextInt(3) + 1; // 1 to 3 enemies
+        for (int i = 0; i < enemyCount; i++) {
+            enemies.add(new ChasingEnemy(random.nextInt(1200), random.nextInt(600), 64, 64, 50, 2.5f));
+        }
+        return enemies;
     }
     private void initializeRooms() {
         rooms = new HashMap<>();

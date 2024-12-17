@@ -8,6 +8,7 @@ public class Room {
     private Array<Enemy> RoomEnemies;
     private Array<Enemy> OGEnemies;
     private boolean isCleared;
+    private Room north, south, east, west; // Adjacent rooms
 
     public Room(Array<Obstacle> obstacles, Array<Enemy> enemies) {
         this.RoomObstacles = new Array<>();
@@ -76,4 +77,17 @@ public class Room {
 
         this.isCleared = false; // Mark the room as not cleared
     }
+
+    // Getters and setters for neighbors
+    public Room getNorth() { return north; }
+    public void setNorth(Room north) { this.north = north; }
+
+    public Room getSouth() { return south; }
+    public void setSouth(Room south) { this.south = south; }
+
+    public Room getEast() { return east; }
+    public void setEast(Room east) { this.east = east; }
+
+    public Room getWest() { return west; }
+    public void setWest(Room west) { this.west = west; }
 }
